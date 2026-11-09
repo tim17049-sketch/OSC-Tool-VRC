@@ -44,6 +44,9 @@ Am Avatar kommt der Puls also im Sekundentakt an, in der Chatbox alle zwei
 Sekunden. Die Uhr selbst glättet ihre Messung über einige Sekunden; schneller
 als das geht es mit keinem optischen Sensor.
 
+Dauermessung und WLAN kosten Akku: Rechne auf der Uhr mit deutlich kürzerer
+Laufzeit, solange die Übertragung läuft.
+
 ## Einrichten
 
 ### 1. Windows-App
