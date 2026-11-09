@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">VRC Puls</string>
+    <string name="bpm">bpm</string>
+    <string name="start">Start</string>
+    <string name="stop">Stopp</string>
+    <string name="status_idle">Tippe auf Start, um deinen Puls an den PC zu senden</string>
+    <string name="status_no_wifi">Wartet auf WLAN. Schalte WLAN auf der Uhr ein.</string>
+    <string name="status_searching">Sucht den PC …</string>
+    <string name="status_connecting">Verbindet mit %1$s …</string>
+    <string name="status_connected">Live auf %1$s</string>
+    <string name="status_no_contact">Kein Messwert. Trage die Uhr eng am Handgelenk.</string>
+    <string name="permission_needed">Ohne die Sensor-Berechtigung gibt es keinen Puls zu senden. Erlaube sie in den Einstellungen der Uhr.</string>
+    <string name="no_sensor">Diese Uhr hat keinen Pulssensor.</string>
+    <string name="pc_auto">PC: automatisch gefunden</string>
+    <string name="pc_manual">PC: %1$s</string>
+    <string name="pc_title">PC-Adresse</string>
+    <string name="pc_hint">z. B. 192.168.1.20</string>
+    <string name="pc_help">Leer lassen, um den PC automatisch zu finden.</string>
+    <string name="save">Speichern</string>
+    <string name="notification_channel">Puls-Übertragung</string>
+    <string name="notification_text">Sendet Puls an den PC</string>
+</resources>

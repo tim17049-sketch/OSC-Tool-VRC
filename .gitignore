@@ -1,0 +1,15 @@
+# Desktop
+desktop/node_modules/
+desktop/dist/
+desktop/target/
+desktop/src-tauri/gen/
+
+# Watch
+watch/.gradle/
+watch/build/
+watch/app/build/
+watch/local.properties
+watch/.kotlin/
+
+.DS_Store
+*.log

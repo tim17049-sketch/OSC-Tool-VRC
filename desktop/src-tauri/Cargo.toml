@@ -1,0 +1,17 @@
+[package]
+name = "osc-tool-vrc"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Open source OSC chatbox and heart rate tool for VRChat"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+osctool-core = { path = "../core" }
+tauri = { version = "2", features = [] }
+tauri-plugin-single-instance = "2"
+tokio = { version = "1", features = ["sync"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

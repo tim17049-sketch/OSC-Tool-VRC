@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">VRC Pulse</string>
+    <string name="bpm">bpm</string>
+    <string name="start">Start</string>
+    <string name="stop">Stop</string>
+    <string name="status_idle">Tap Start to send your pulse to the PC</string>
+    <string name="status_no_wifi">Waiting for Wi-Fi. Switch on Wi-Fi on the watch.</string>
+    <string name="status_searching">Searching for the PC …</string>
+    <string name="status_connecting">Connecting to %1$s …</string>
+    <string name="status_connected">Live on %1$s</string>
+    <string name="status_no_contact">No reading. Wear the watch snugly.</string>
+    <string name="permission_needed">Without the sensor permission there is no pulse to send. Allow it in the watch settings.</string>
+    <string name="no_sensor">This watch has no heart rate sensor.</string>
+    <string name="pc_auto">PC: found automatically</string>
+    <string name="pc_manual">PC: %1$s</string>
+    <string name="pc_title">PC address</string>
+    <string name="pc_hint">e.g. 192.168.1.20</string>
+    <string name="pc_help">Leave empty to find the PC automatically.</string>
+    <string name="save">Save</string>
+    <string name="notification_channel">Pulse transmission</string>
+    <string name="notification_text">Sending pulse to the PC</string>
+</resources>
