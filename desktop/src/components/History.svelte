@@ -98,7 +98,7 @@
   }
 
   .area {
-    fill: rgba(255, 92, 138, 0.12);
+    fill: color-mix(in srgb, var(--pulse) 12%, transparent);
   }
 
   figcaption {

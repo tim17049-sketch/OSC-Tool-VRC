@@ -1,7 +1,7 @@
 import { backend } from "./backend";
-import type { Config, Snapshot } from "./types";
+import type { Config, DeviceInfo, Snapshot } from "./types";
 
-export type Page = "overview" | "chatbox" | "pulse" | "settings";
+export type Page = "overview" | "chatbox" | "pulse" | "scanner" | "avatar" | "settings";
 
 interface HistoryPoint {
   at: number;
@@ -9,12 +9,25 @@ interface HistoryPoint {
 }
 
 const HISTORY_MS = 5 * 60 * 1000;
+const RECENT_KEY = "osctool.recentMessages";
+const RECENT_MAX = 8;
+
+function loadRecent(): string[] {
+  try {
+    const list = JSON.parse(localStorage.getItem(RECENT_KEY) ?? "[]");
+    return Array.isArray(list) ? list.filter((m) => typeof m === "string").slice(0, RECENT_MAX) : [];
+  } catch {
+    return [];
+  }
+}
 
 export const app = $state({
   page: "overview" as Page,
   config: null as Config | null,
   snap: null as Snapshot | null,
   history: [] as HistoryPoint[],
+  /** Messages typed recently, newest first; kept on this PC only. */
+  recent: loadRecent(),
   /** Set when the app could not start or settings could not be saved. */
   error: null as string | null,
 });
@@ -39,6 +52,31 @@ export async function init() {
   } catch (e) {
     app.error = String(e);
   }
+}
+
+function saveRecent() {
+  try {
+    localStorage.setItem(RECENT_KEY, JSON.stringify(app.recent));
+  } catch {
+    // Not being able to remember them is no problem.
+  }
+}
+
+export function rememberMessage(text: string) {
+  const trimmed = text.trim();
+  if (!trimmed) return;
+  app.recent = [trimmed, ...app.recent.filter((m) => m !== trimmed)].slice(0, RECENT_MAX);
+  saveRecent();
+}
+
+export function forgetMessages() {
+  app.recent = [];
+  saveRecent();
+}
+
+/** Name to show for the connected device, whatever it reported. */
+export function deviceName(device: DeviceInfo | null, fallback: string): string {
+  return device?.name ?? fallback;
 }
 
 let saveTimer: ReturnType<typeof setTimeout> | undefined;

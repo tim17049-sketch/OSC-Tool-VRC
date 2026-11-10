@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { app, updateConfig } from "../lib/state.svelte";
+  import { app, deviceName, rememberMessage, forgetMessages, updateConfig } from "../lib/state.svelte";
   import { backend } from "../lib/backend";
   import { num, t } from "../lib/i18n";
   import { CHATBOX_MAX_CHARS } from "../lib/types";
@@ -14,7 +14,8 @@
   const target = $derived(`${config.oscHost}:${config.oscPort}`);
   const showing = $derived(chat.messageRemainingS !== null);
   const visible = $derived(chat.preview !== "" && (chat.enabled || showing));
-  const device = $derived(hr.device ?? t("pulse.unknownDevice"));
+  const device = $derived(deviceName(hr.device, t("pulse.unknownDevice")));
+  const battery = $derived(hr.device?.battery ?? null);
 
   let draft = $state("");
   let typing = false;
@@ -29,6 +30,7 @@
     event.preventDefault();
     if (!draft.trim()) return;
     backend.sendMessage(draft);
+    rememberMessage(draft);
     draft = "";
     setTyping(false);
   }
@@ -105,6 +107,11 @@
         {#if hr.bpm !== null}
           <span class="dot live"></span>
           <span>{t("pulse.connected", { device })}</span>
+          {#if battery !== null}
+            <span class="muted num battery">
+              · {t("pulse.battery", { n: battery })}{hr.device?.charging ? ` · ${t("pulse.charging")}` : ""}
+            </span>
+          {/if}
         {:else if hr.connected}
           <span class="dot warn"></span>
           <span>{t("pulse.noContact", { device })}</span>
@@ -138,9 +145,30 @@
       </div>
       <button type="submit" class="btn primary">{t("msg.send")}</button>
     </form>
+    {#if app.recent.length}
+      <div class="recent">
+        <span class="small muted">{t("msg.recent")}</span>
+        {#each app.recent as text}
+          <button
+            type="button"
+            class="chip"
+            title={t("msg.resend", { text })}
+            onclick={() => {
+              backend.sendMessage(text);
+              rememberMessage(text);
+            }}
+          >
+            {text}
+          </button>
+        {/each}
+        <button type="button" class="btn quiet forget" onclick={forgetMessages}>{t("msg.forget")}</button>
+      </div>
+    {/if}
     {#if showing}
       <p class="small note">
-        <span>{t("msg.showing", { s: chat.messageRemainingS ?? 0 })}</span>
+        <span>
+          {chat.messageKept ? t("msg.kept") : t("msg.showing", { s: chat.messageRemainingS ?? 0 })}
+        </span>
         <button type="button" class="btn quiet" onclick={() => backend.sendMessage("")}>
           {t("msg.stop")}
         </button>
@@ -183,8 +211,8 @@
     border-radius: 12px;
     overflow: hidden;
     background:
-      radial-gradient(120% 70% at 50% 100%, rgba(255, 92, 138, 0.16), transparent 70%),
-      linear-gradient(180deg, #100e22 0%, #1a1636 100%);
+      radial-gradient(120% 70% at 50% 100%, color-mix(in srgb, var(--pulse) 16%, transparent), transparent 70%),
+      linear-gradient(180deg, var(--scene-top) 0%, var(--scene-bottom) 100%);
   }
 
   .avatar {
@@ -196,16 +224,16 @@
 
   .avatar svg {
     display: block;
-    fill: #322b5c;
+    fill: var(--figure);
   }
 
   .plate {
     padding: 3px 14px;
     border-radius: 6px;
     background: rgba(12, 10, 24, 0.7);
+    color: #a69fc8;
     font-size: 13px;
     font-weight: 600;
-    color: var(--muted);
   }
 
   .empty {
@@ -269,9 +297,9 @@
     border-radius: 10px;
     /* ECG paper */
     background:
-      linear-gradient(rgba(255, 92, 138, 0.07) 1px, transparent 1px) 0 0 / 100% 16px,
-      linear-gradient(90deg, rgba(255, 92, 138, 0.07) 1px, transparent 1px) 0 0 / 16px 100%,
-      #191530;
+      linear-gradient(color-mix(in srgb, var(--pulse) 7%, transparent) 1px, transparent 1px) 0 0 / 100% 16px,
+      linear-gradient(90deg, color-mix(in srgb, var(--pulse) 7%, transparent) 1px, transparent 1px) 0 0 / 16px 100%,
+      var(--trace);
     overflow: hidden;
   }
 
@@ -334,6 +362,41 @@
     right: 12px;
     top: 10px;
     pointer-events: none;
+  }
+
+  .battery {
+    white-space: nowrap;
+  }
+
+  .recent {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .chip {
+    max-width: 260px;
+    min-height: 32px;
+    padding: 0 12px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--raised);
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    transition: border-color 120ms ease-out;
+  }
+
+  .chip:hover {
+    border-color: var(--pulse);
+  }
+
+  .forget {
+    height: 32px;
+    font-size: 13px;
   }
 
   .note {

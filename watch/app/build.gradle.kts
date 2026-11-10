@@ -14,8 +14,8 @@ android {
         // Wear OS 5 (Galaxy Watch 7). Staying on 34 keeps BODY_SENSORS as the
         // one heart rate permission on every Wear OS version.
         targetSdk = 34
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.2.0"
     }
 
     signingConfigs {

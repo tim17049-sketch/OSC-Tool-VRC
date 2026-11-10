@@ -72,6 +72,8 @@ class HrService : Service(), SensorEventListener {
     private var noContact = false
     private var lastEventAt = 0L
     private var lastSentAt = 0L
+    private var lastStatusAt = 0L
+    private var sensorName: String? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -105,6 +107,7 @@ class HrService : Service(), SensorEventListener {
             return
         }
         running = true
+        sensorName = sensor.name?.takeIf { it.isNotBlank() }
         wakeLock = getSystemService(PowerManager::class.java)
             .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "osctool:hr")
             .apply { acquire() }
@@ -167,6 +170,10 @@ class HrService : Service(), SensorEventListener {
                 Repo.state.update { it.copy(bpm = null, noContact = true) }
             }
             if (now - lastSentAt >= 950 && (bpm != null || noContact)) send()
+            if (socketOpen && now - lastStatusAt >= STATUS_MS) {
+                socket?.send(DeviceInfo.status(this@HrService).toString())
+                lastStatusAt = now
+            }
             main.postDelayed(this, 1000)
         }
     }
@@ -299,11 +306,8 @@ class HrService : Service(), SensorEventListener {
                 main.post {
                     if (mine != generation) return@post
                     socketOpen = true
-                    val hello = JSONObject()
-                        .put("type", "hello")
-                        .put("device", Build.MODEL)
-                        .put("app", BuildConfig.VERSION_NAME)
-                    webSocket.send(hello.toString())
+                    webSocket.send(DeviceInfo.hello(this@HrService, sensorName).toString())
+                    lastStatusAt = SystemClock.elapsedRealtime()
                     Repo.state.update { it.copy(link = Link.Connected) }
                     if (bpm != null || noContact) send()
                 }
@@ -385,6 +389,8 @@ class HrService : Service(), SensorEventListener {
         private const val NOTIFICATION_ID = 1
         private const val RETRY_MS = 3000L
         private const val SENSOR_SILENCE_MS = 30_000L
+        /** How often the battery level goes to the PC. */
+        private const val STATUS_MS = 60_000L
 
         fun start(context: Context) {
             ContextCompat.startForegroundService(context, Intent(context, HrService::class.java))

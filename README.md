@@ -18,7 +18,18 @@ watch. The app itself is available in German and English.*
 - **Puls am Avatar** über die Parameter von HRtoVRChat_OSC (`HR`, `HRPercent`,
   `isHRBeat` …), die gängige Puls-Prefabs verstehen.
 - **Eigene Nachrichten** tippen und senden, mit Tipp-Anzeige in VRChat.
-- **Musik** aus Spotify, Browser und Co. über die Mediensteuerung von Windows.
+- **Musik** aus Spotify, Browser und Co. über die Mediensteuerung von Windows,
+  mit Fortschrittsbalken und auf Wunsch **Songtext live** (von lrclib.net).
+- **Furry-Scanner** 🐾: ein Spaß-Scan mit zufälligem Ergebnis in der Chatbox,
+  per Knopf oder über einen Parameter am Avatar.
+- **Avatar-Parameter senden** (Bool/Int/Float) mit Favoriten, z. B. um
+  Kleidung oder Ohren vom PC aus zu schalten.
+- **OSC-Monitor**: zeigt live, was VRChat an Port 9001 zurückschickt.
+- **Uhr-Infos**: Name, Modell, Wear-OS-Version und Akku der verbundenen Uhr –
+  für jede Wear-OS-Uhr, auch ältere oder neuere Modelle.
+- **Eigene Nachrichten** bleiben auf Wunsch dauerhaft stehen; zuletzt gesendete
+  lassen sich mit einem Klick wiederholen.
+- **Aussehen**: Farbschemata Nacht, Dunkel, AMOLED und Hell, freie Akzentfarbe.
 - Hält VRChats Chatbox-Limit ein (höchstens ein Update alle 1,5 s, 144 Zeichen,
   9 Zeilen), damit die Chatbox nicht gesperrt wird.
 
@@ -26,7 +37,8 @@ watch. The app itself is available in German and English.*
 
 Das Tool spricht ausschließlich über VRChats offizielle
 [OSC-Schnittstelle](https://docs.vrchat.com/docs/osc-overview) mit dem Spiel:
-UDP-Pakete an `127.0.0.1:9000`, genau dafür hat VRChat sie gebaut. Es liest
+UDP-Pakete an `127.0.0.1:9000` und, wenn du den Empfang einschaltest, zurück
+auf Port `9001` – genau dafür hat VRChat sie gebaut. Es liest
 keinen Spielspeicher, lädt nichts in das Spiel, legt kein Overlay darüber und
 fasst den VRChat-Prozess nicht an – nicht einmal, um zu prüfen, ob er läuft.
 Für Easy Anti-Cheat ist es damit ein ganz normales, getrenntes Programm.
@@ -109,8 +121,13 @@ Die Uhr misst weiter, wenn das Display aus ist. Zum Beenden **Stopp** tippen.
 | `{hr_trend}` | ↑, ↓ oder → |
 | `{heart}` | ❤ und ♡ im Wechsel |
 | `{hr_min}` `{hr_max}` `{hr_avg}` | Tiefst-, Höchst- und Mittelwert seit dem Start |
+| `{watch}` `{watch_battery}` | Name und Akku der Uhr |
 | `{song}` | Interpret – Titel |
-| `{title}` `{artist}` | Titel und Interpret einzeln |
+| `{title}` `{artist}` `{album}` | Titel, Interpret und Album einzeln |
+| `{play}` | ▶ oder ⏸ (pausiert nur sichtbar, wenn „Pausierte Musik weiter anzeigen“ an ist) |
+| `{bar}` | Fortschrittsbalken, z. B. `━━━●──────` |
+| `{pos}` `{dur}` | Position und Länge des Songs |
+| `{lyric}` | Aktuelle Songtext-Zeile. Nur mit diesem Platzhalter fragt die App lrclib.net nach dem Songtext (Interpret und Titel werden dorthin gesendet). |
 | `{time}` `{date}` | Uhrzeit und Datum |
 | `{cpu}` `{ram}` | Auslastung des PCs |
 
@@ -140,7 +157,8 @@ simulierten Daten statt VRChat und Uhr.
 
 Aufbau:
 
-- `desktop/core` – Rust-Bibliothek: OSC, Vorlagen, Puls-Empfänger. Tests mit
+- `desktop/core` – Rust-Bibliothek: OSC, Vorlagen, Puls-Empfänger, Songtexte,
+  Furry-Scanner. Tests mit
   `cargo test -p osctool-core`.
 - `desktop/src-tauri` – das Windows-Programm (Tauri).
 - `desktop/src` – Oberfläche (Svelte).

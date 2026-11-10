@@ -44,10 +44,12 @@
       ctx.clearRect(0, 0, width, height);
       const base = height * 0.68;
       const amp = height * 0.56;
+      // Follows the accent colour of the theme.
+      const color = getComputedStyle(canvas).getPropertyValue("--pulse").trim() || "#ff5c8a";
       const fade = ctx.createLinearGradient(0, 0, width, 0);
-      fade.addColorStop(0, "rgba(255, 92, 138, 0)");
-      fade.addColorStop(0.35, "rgba(255, 92, 138, 0.75)");
-      fade.addColorStop(1, "rgba(255, 92, 138, 1)");
+      fade.addColorStop(0, color + "00");
+      fade.addColorStop(0.35, color + "bf");
+      fade.addColorStop(1, color);
       ctx.strokeStyle = fade;
       ctx.lineWidth = 2;
       ctx.lineJoin = "round";
@@ -55,7 +57,7 @@
       trace.forEach((v, x) => (x ? ctx.lineTo(x, base - v * amp) : ctx.moveTo(x, base - v * amp)));
       ctx.stroke();
       const head = trace[trace.length - 1] ?? 0;
-      ctx.fillStyle = "#ff5c8a";
+      ctx.fillStyle = color;
       ctx.beginPath();
       ctx.arc(width - 3, base - head * amp, 3, 0, Math.PI * 2);
       ctx.fill();

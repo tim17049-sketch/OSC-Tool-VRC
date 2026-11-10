@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import type { Backend, Config, Snapshot } from "./types";
+import type { Backend, Config, MonitorRow, Snapshot } from "./types";
 import { createMockBackend } from "./mock";
 
 const tauriBackend: Backend = {
@@ -9,6 +9,10 @@ const tauriBackend: Backend = {
   getSnapshot: () => invoke<Snapshot>("get_snapshot"),
   sendMessage: (text) => invoke("send_message", { text }),
   setTyping: (typing) => invoke("set_typing", { typing }),
+  scan: (name) => invoke<boolean>("scan", { name: name ?? null }),
+  sendParam: (name, kind, value) => invoke("send_param", { name, kind, value }),
+  getMonitor: () => invoke<MonitorRow[]>("get_monitor"),
+  clearMonitor: () => invoke("clear_monitor"),
   onSnapshot: (handler) => listen<Snapshot>("snapshot", (event) => handler(event.payload)),
 };
 

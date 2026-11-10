@@ -19,6 +19,19 @@
       icon: "M12 20.5S3.5 15 3.5 9A4.5 4.5 0 0 1 12 7a4.5 4.5 0 0 1 8.5 2c0 6-8.5 11.5-8.5 11.5z",
     },
     {
+      page: "scanner",
+      label: "nav.scanner",
+      // A paw: four toes and the pad.
+      icon:
+        "M4.3 10a1.7 2.1 0 1 0 3.4 0a1.7 2.1 0 1 0-3.4 0zM7.8 6.4a1.7 2.1 0 1 0 3.4 0a1.7 2.1 0 1 0-3.4 0zM12.8 6.4a1.7 2.1 0 1 0 3.4 0a1.7 2.1 0 1 0-3.4 0zM16.3 10a1.7 2.1 0 1 0 3.4 0a1.7 2.1 0 1 0-3.4 0zM12 12.6c-3 0-5.4 3-5.4 5.3 0 1.3 1 2.1 2.3 2.1 1.3 0 2-.7 3.1-.7s1.8.7 3.1.7c1.3 0 2.3-.8 2.3-2.1 0-2.3-2.4-5.3-5.4-5.3z",
+    },
+    {
+      page: "avatar",
+      label: "nav.avatar",
+      // Radio waves around a dot: OSC going both ways.
+      icon: "M10.6 12.5a1.4 1.4 0 1 0 2.8 0a1.4 1.4 0 1 0-2.8 0zM8.6 15.9a4.8 4.8 0 0 1 0-6.8m6.8 0a4.8 4.8 0 0 1 0 6.8M5.7 18.8a8.9 8.9 0 0 1 0-12.6m12.6 0a8.9 8.9 0 0 1 0 12.6",
+    },
+    {
       page: "settings",
       label: "nav.settings",
       icon: "M4 7h9m4 0h3M4 17h3m4 0h9M15 4.5v5M9 14.5v5",
@@ -34,7 +47,7 @@
       <path
         d="M6.5 14h5l2-5 3.5 9.5 2.5-4.5h6"
         fill="none"
-        stroke="#2a0b18"
+        stroke="var(--on-pulse)"
         stroke-width="2.2"
         stroke-linecap="round"
         stroke-linejoin="round"

@@ -1,6 +1,8 @@
 // No console window on Windows release builds.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use osctool_core::config::ParamKind;
+use osctool_core::engine::MonitorRow;
 use osctool_core::{Config, Engine, Snapshot};
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -41,6 +43,26 @@ fn set_typing(state: State<'_, AppState>, typing: bool) {
     state.engine.set_typing(typing);
 }
 
+#[tauri::command]
+fn scan(state: State<'_, AppState>, name: Option<String>) -> bool {
+    state.engine.scan(name)
+}
+
+#[tauri::command]
+fn send_param(state: State<'_, AppState>, name: String, kind: ParamKind, value: f64) -> Result<(), String> {
+    state.engine.send_param(&name, kind, value)
+}
+
+#[tauri::command]
+fn get_monitor(state: State<'_, AppState>) -> Vec<MonitorRow> {
+    state.engine.monitor()
+}
+
+#[tauri::command]
+fn clear_monitor(state: State<'_, AppState>) {
+    state.engine.clear_monitor();
+}
+
 fn main() {
     let app = tauri::Builder::default()
         // A second instance would fight over the chatbox and the watch port.
@@ -77,7 +99,11 @@ fn main() {
             set_config,
             get_snapshot,
             send_message,
-            set_typing
+            set_typing,
+            scan,
+            send_param,
+            get_monitor,
+            clear_monitor
         ])
         .build(tauri::generate_context!())
         .expect("failed to start OSC Tool VRC");
