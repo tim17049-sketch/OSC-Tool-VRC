@@ -20,8 +20,14 @@ ureq = { version = "2", default-features = false, features = ["native-tls"] }
 native-tls = "0.2"
 sys-locale = "0.3"
 
+[target.'cfg(target_os = "linux")'.dependencies]
+zbus = "5"
+
 [target.'cfg(windows)'.dependencies]
 windows = { version = "0.58", features = ["Foundation", "Media_Control"] }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["rt-multi-thread", "net", "sync", "time", "macros"] }
+
+[target.'cfg(target_os = "linux")'.dev-dependencies]
+zbus = "5"

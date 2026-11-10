@@ -2,7 +2,7 @@
 
 Open-Source-Tool für die VRChat-Chatbox: zeigt deinen Live-Puls von der Galaxy
 Watch, die laufende Musik, Uhrzeit und eigene Nachrichten über deinem Avatar.
-Läuft als Programm unter Windows 10 und 11.
+Läuft als Programm unter Windows 10 und 11 sowie unter Linux.
 
 *Open source OSC tool for the VRChat chatbox with live heart rate from a Wear OS
 watch. The app itself is available in German and English.*
@@ -18,7 +18,8 @@ watch. The app itself is available in German and English.*
 - **Puls am Avatar** über die Parameter von HRtoVRChat_OSC (`HR`, `HRPercent`,
   `isHRBeat` …), die gängige Puls-Prefabs verstehen.
 - **Eigene Nachrichten** tippen und senden, mit Tipp-Anzeige in VRChat.
-- **Musik** aus Spotify, Browser und Co. über die Mediensteuerung von Windows,
+- **Musik** aus Spotify, Browser und Co. – unter Windows über dessen
+  Mediensteuerung, unter Linux über MPRIS (das können praktisch alle Player),
   mit Fortschrittsbalken und auf Wunsch **Songtext live** (von lrclib.net).
 - **Furry-Scanner** 🐾: ein Spaß-Scan mit zufälligem Ergebnis in der Chatbox,
   per Knopf oder über einen Parameter am Avatar.
@@ -61,14 +62,25 @@ Laufzeit, solange die Übertragung läuft.
 
 ## Einrichten
 
-### 1. Windows-App
+### 1. PC-App
 
-Installer von der [Releases-Seite](../../releases) laden und starten. Solange es
-noch kein Release gibt: unter [Actions](../../actions) den neuesten Build öffnen
-und das Artefakt `osc-tool-vrc-windows` herunterladen.
+Pakete gibt es auf der [Releases-Seite](../../releases). Solange es noch kein
+Release gibt: unter [Actions](../../actions) den neuesten Build öffnen und das
+passende Artefakt herunterladen.
 
-Fragt Windows beim ersten Start nach der Firewall, erlaube den Zugriff für
-private Netzwerke – sonst erreicht die Uhr den PC nicht.
+**Windows:** Artefakt `osc-tool-vrc-windows`, Installer starten. Fragt Windows
+beim ersten Start nach der Firewall, erlaube den Zugriff für private Netzwerke –
+sonst erreicht die Uhr den PC nicht.
+
+**Linux:** Artefakt `osc-tool-vrc-linux`. Darin liegen:
+
+- `.deb` für Debian, Ubuntu, Mint, Pop!_OS: `sudo apt install ./OSC*.deb`
+- `.rpm` für Fedora, openSUSE: `sudo dnf install ./OSC*.rpm`
+- `.AppImage` für alle anderen: `chmod +x OSC*.AppImage`, dann starten.
+
+VRChat läuft unter Linux über Steam/Proton; OSC funktioniert dort genauso.
+Ist eine Firewall aktiv (z. B. `ufw` oder `firewalld`), gib TCP-Port `9555`
+(Uhr) und UDP-Port `5353` (automatische Suche) im Heimnetz frei.
 
 ### 2. VRChat
 
@@ -109,7 +121,7 @@ Die App gibt es nicht im Play Store; sie wird einmalig per ADB installiert.
 
 Uhr und PC ins selbe WLAN, auf der Uhr **VRC Puls** öffnen und **Start**
 tippen. Die Uhr findet den PC selbst. Klappt das in deinem Netz nicht, trägst
-du auf der Uhr die Adresse ein, die die Windows-App unter **Puls** anzeigt.
+du auf der Uhr die Adresse ein, die die PC-App unter **Puls** anzeigt.
 
 Die Uhr misst weiter, wenn das Display aus ist. Zum Beenden **Stopp** tippen.
 
@@ -134,7 +146,12 @@ Die Uhr misst weiter, wenn das Display aus ist. Zum Beenden **Stopp** tippen.
 ## Selbst bauen
 
 Voraussetzungen: [Rust](https://rustup.rs), Node.js 22, für die Watch-App
-JDK 17 und das Android SDK.
+JDK 17 und das Android SDK. Unter Linux zusätzlich die Bibliotheken für Tauri,
+etwa unter Debian/Ubuntu:
+
+```bash
+sudo apt install libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libssl-dev
+```
 
 ```bash
 cd desktop
@@ -160,7 +177,7 @@ Aufbau:
 - `desktop/core` – Rust-Bibliothek: OSC, Vorlagen, Puls-Empfänger, Songtexte,
   Furry-Scanner. Tests mit
   `cargo test -p osctool-core`.
-- `desktop/src-tauri` – das Windows-Programm (Tauri).
+- `desktop/src-tauri` – das Programm für Windows und Linux (Tauri).
 - `desktop/src` – Oberfläche (Svelte).
 - `watch` – Wear-OS-App (Kotlin, Compose).
 - [`docs/protocol.md`](docs/protocol.md) – das Protokoll zwischen Uhr und PC,

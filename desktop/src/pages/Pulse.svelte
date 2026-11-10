@@ -106,7 +106,7 @@
         {:else}
           <p class="small warn">{t("watch.noAddress")}</p>
         {/each}
-        <p class="small muted">{t("watch.firewall")}</p>
+        <p class="small muted">{t("watch.firewall", { port: net.hrPort })}</p>
       </div>
     </section>
     {/if}

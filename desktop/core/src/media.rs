@@ -111,9 +111,145 @@ pub fn now_playing() -> Option<Media> {
     })
 }
 
-#[cfg(not(windows))]
+/// What is playing right now according to MPRIS, the D-Bus interface that
+/// Spotify, Firefox, Chromium, VLC and most other Linux players offer.
+#[cfg(target_os = "linux")]
+pub fn now_playing() -> Option<Media> {
+    linux::now_playing()
+}
+
+#[cfg(not(any(windows, target_os = "linux")))]
 pub fn now_playing() -> Option<Media> {
     None
+}
+
+#[cfg(target_os = "linux")]
+mod linux {
+    use super::Media;
+    use std::collections::HashMap;
+    use std::sync::Mutex;
+    use zbus::blocking::fdo::{DBusProxy, PropertiesProxy};
+    use zbus::blocking::Connection;
+    use zbus::names::InterfaceName;
+    use zbus::zvariant::{OwnedValue, Value};
+
+    const PREFIX: &str = "org.mpris.MediaPlayer2.";
+    const PLAYER: &str = "org.mpris.MediaPlayer2.Player";
+
+    /// One session bus connection, opened on first use and again after errors.
+    static BUS: Mutex<Option<Connection>> = Mutex::new(None);
+
+    fn bus() -> Option<Connection> {
+        let mut bus = BUS.lock().ok()?;
+        if bus.is_none() {
+            *bus = Connection::session().ok();
+        }
+        bus.clone()
+    }
+
+    pub fn now_playing() -> Option<Media> {
+        let bus = bus()?;
+        let names = match DBusProxy::new(&bus).and_then(|p| p.list_names().map_err(zbus::Error::from)) {
+            Ok(names) => names,
+            Err(_) => {
+                if let Ok(mut b) = BUS.lock() {
+                    *b = None;
+                }
+                return None;
+            }
+        };
+        let mut paused = None;
+        for name in names.iter().map(|n| n.as_str()) {
+            // playerctld only mirrors the other players.
+            if !name.starts_with(PREFIX) || name == "org.mpris.MediaPlayer2.playerctld" {
+                continue;
+            }
+            match read_player(&bus, name) {
+                Some(media) if media.playing => return Some(media),
+                Some(media) if paused.is_none() => paused = Some(media),
+                _ => {}
+            }
+        }
+        paused
+    }
+
+    /// Variants inside the metadata dictionary come wrapped once more.
+    fn inner<'a>(value: &'a Value<'a>) -> &'a Value<'a> {
+        match value {
+            Value::Value(v) => inner(v),
+            other => other,
+        }
+    }
+
+    fn text(value: Option<&OwnedValue>) -> Option<String> {
+        match inner(value?) {
+            Value::Str(s) => Some(s.to_string()),
+            Value::Array(a) => {
+                let parts: Vec<String> = a
+                    .iter()
+                    .filter_map(|v| match inner(v) {
+                        Value::Str(s) => Some(s.to_string()),
+                        _ => None,
+                    })
+                    .collect();
+                Some(parts.join(", "))
+            }
+            _ => None,
+        }
+    }
+
+    /// Microseconds as reported by MPRIS, converted to milliseconds.
+    fn micros(value: Option<&OwnedValue>) -> Option<u64> {
+        let us = match inner(value?) {
+            Value::I64(v) => u64::try_from(*v).ok()?,
+            Value::U64(v) => *v,
+            Value::I32(v) => u64::try_from(*v).ok()?,
+            Value::U32(v) => u64::from(*v),
+            Value::F64(v) if *v >= 0.0 => *v as u64,
+            _ => return None,
+        };
+        Some(us / 1000)
+    }
+
+    fn read_player(bus: &Connection, name: &str) -> Option<Media> {
+        let props = PropertiesProxy::builder(bus)
+            .destination(name)
+            .ok()?
+            .path("/org/mpris/MediaPlayer2")
+            .ok()?
+            .build()
+            .ok()?;
+        let all = props
+            .get_all(InterfaceName::from_static_str_unchecked(PLAYER))
+            .ok()?;
+        let status = text(all.get("PlaybackStatus"))?;
+        let playing = status == "Playing";
+        if !playing && status != "Paused" {
+            return None;
+        }
+        let metadata: HashMap<String, OwnedValue> = all
+            .get("Metadata")
+            .and_then(|m| m.try_clone().ok())
+            .and_then(|m| HashMap::try_from(m).ok())
+            .unwrap_or_default();
+        let title = text(metadata.get("xesam:title")).filter(|t| !t.trim().is_empty())?;
+        let duration_ms = micros(metadata.get("mpris:length")).filter(|d| *d > 0);
+        // Some players leave Position out of GetAll; ask for it on its own.
+        let position_ms = micros(all.get("Position")).or_else(|| {
+            let value = props
+                .get(InterfaceName::from_static_str_unchecked(PLAYER), "Position")
+                .ok()?;
+            micros(Some(&value))
+        });
+        Some(Media {
+            title,
+            artist: text(metadata.get("xesam:artist")).unwrap_or_default(),
+            album: text(metadata.get("xesam:album")).unwrap_or_default(),
+            playing,
+            position_ms: duration_ms.and(position_ms).map(|p| p.min(duration_ms.unwrap_or(p))),
+            duration_ms,
+        })
+    }
 }
 
 #[cfg(test)]

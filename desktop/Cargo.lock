@@ -2475,6 +2475,7 @@ dependencies = [
  "tokio-tungstenite",
  "ureq",
  "windows 0.58.0",
+ "zbus",
 ]
 
 [[package]]
