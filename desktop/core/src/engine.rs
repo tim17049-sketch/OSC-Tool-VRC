@@ -12,7 +12,7 @@ use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, Instant};
 use tokio::net::{TcpListener, UdpSocket};
-use tokio::sync::{broadcast, Notify};
+use tokio::sync::{broadcast, watch, Notify};
 use tokio::task::JoinHandle;
 
 /// State of the whole tool as shown by the UI.
@@ -213,6 +213,8 @@ struct Inner {
     host_name: String,
     wake_chat: Notify,
     restart_server: Notify,
+    /// Turns true on shutdown; tells connected watches to stop.
+    quitting: watch::Sender<bool>,
     restart_receiver: Notify,
     events: broadcast::Sender<Snapshot>,
 }
@@ -246,6 +248,7 @@ impl Engine {
             host_name: stats::host_name(),
             wake_chat: Notify::new(),
             restart_server: Notify::new(),
+            quitting: watch::Sender::new(false),
             restart_receiver: Notify::new(),
             events,
         });
@@ -357,6 +360,14 @@ impl Engine {
     /// Clear the chatbox and tell the avatar the heart rate is gone. Call
     /// before the app exits.
     pub async fn shutdown(&self) {
+        // Say goodbye to the watch so it stops measuring, and give the close
+        // frames a moment to leave before the process ends.
+        self.inner.quitting.send_replace(true);
+        let deadline = tokio::time::Instant::now() + Duration::from_millis(500);
+        while self.inner.hr.lock().unwrap().connections > 0 && tokio::time::Instant::now() < deadline {
+            tokio::time::sleep(Duration::from_millis(20)).await;
+        }
+
         let cfg = self.inner.cfg();
         let showing = !self.inner.chat.lock().unwrap().last_text.is_empty();
         if showing {
@@ -419,7 +430,7 @@ impl Inner {
                     }
                     self.emit();
                     let me = self.clone();
-                    let serve = hr::serve(listener, self.host_name.clone(), move |event| {
+                    let serve = hr::serve(listener, self.host_name.clone(), self.quitting.subscribe(), move |event| {
                         me.on_hr_event(event)
                     });
                     tokio::select! {

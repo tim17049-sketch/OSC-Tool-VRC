@@ -6,6 +6,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 /** Where the connection to the PC stands. */
 enum class Link { Idle, NoWifi, Searching, Connecting, Connected }
 
+/** Why the service ended by itself. */
+enum class Ended { PcClosed, Unreachable }
+
 data class UiState(
     val running: Boolean = false,
     /** Current heart rate; null while there is no reading. */
@@ -15,6 +18,8 @@ data class UiState(
     val link: Link = Link.Idle,
     /** Name or address of the PC we are talking to. */
     val peer: String? = null,
+    /** Set when the service stopped on its own, to tell the user why. */
+    val ended: Ended? = null,
 )
 
 /** Shared between the service (writes) and the screen (reads). */

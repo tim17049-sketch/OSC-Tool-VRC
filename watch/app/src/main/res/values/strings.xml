@@ -9,6 +9,8 @@
     <string name="status_searching">Searching for the PC …</string>
     <string name="status_connecting">Connecting to %1$s …</string>
     <string name="status_connected">Live on %1$s</string>
+    <string name="status_ended_pc_closed">The PC app was closed. Transmission stopped to save battery.</string>
+    <string name="status_ended_unreachable">PC not reachable for 3 minutes. Transmission stopped to save battery.</string>
     <string name="status_no_contact">No reading. Wear the watch snugly.</string>
     <string name="permission_needed">Without the sensor permission there is no pulse to send. Allow it in the watch settings.</string>
     <string name="no_sensor">This watch has no heart rate sensor.</string>

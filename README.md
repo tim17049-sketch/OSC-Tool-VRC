@@ -63,6 +63,9 @@ als das geht es mit keinem optischen Sensor.
 
 Dauermessung und WLAN kosten Akku: Rechne auf der Uhr mit deutlich kürzerer
 Laufzeit, solange die Übertragung läuft.
+Damit nichts unnötig läuft, misst die Uhr nur, solange der PC verbunden ist.
+Wird die PC-App beendet, stoppt die Uhr sofort; ist der PC drei Minuten lang
+nicht erreichbar, beendet sie die Übertragung ebenfalls von selbst.
 
 ## Einrichten
 

@@ -1,7 +1,7 @@
 //! End to end: a fake watch connects over WebSocket, a fake VRChat listens on
 //! UDP, and the engine in between has to produce the right OSC messages.
 
-use futures_util::SinkExt;
+use futures_util::{SinkExt, StreamExt};
 use osctool_core::{Config, Engine};
 use rosc::{OscPacket, OscType};
 use std::time::Duration;
@@ -274,4 +274,36 @@ async fn sends_avatar_parameters_on_request() {
             && has(seen, "/avatar/parameters/Blush", &OscType::Float(1.0))
     })
     .await;
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn shutdown_tells_the_watch_to_stop() {
+    let hr_port = free_tcp_port();
+    let config = Config { osc_port: free_tcp_port(), hr_port, ..Config::default() };
+    let engine = Engine::start(config).await.unwrap();
+
+    let url = format!("ws://127.0.0.1:{hr_port}/");
+    let mut watch = None;
+    for _ in 0..50 {
+        if let Ok((ws, _)) = tokio_tungstenite::connect_async(&url).await {
+            watch = Some(ws);
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(100)).await;
+    }
+    let mut watch = watch.expect("receiver did not come up");
+
+    engine.shutdown().await;
+
+    let code = tokio::time::timeout(Duration::from_secs(3), async {
+        while let Some(Ok(msg)) = watch.next().await {
+            if let Message::Close(frame) = msg {
+                return frame.map(|f| u16::from(f.code));
+            }
+        }
+        None
+    })
+    .await
+    .expect("no close frame");
+    assert_eq!(code, Some(osctool_core::hr::CLOSE_APP_QUIT));
 }

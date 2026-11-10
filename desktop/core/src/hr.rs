@@ -10,6 +10,9 @@
 //! Every field of "hello" is optional: older watch apps only send "device"
 //! (often a bare model code such as "SM-R910"), other senders maybe nothing.
 //! Unknown fields and message types are ignored, so either side can be newer.
+//! When the app quits it closes every connection with code 4000
+//! (`CLOSE_APP_QUIT`), which tells the watch to stop measuring instead of
+//! searching for the PC again.
 //! A frame containing just a number ("72") is accepted as well, which makes
 //! it easy to feed the tool from scripts or other devices.
 
@@ -20,12 +23,18 @@ use std::collections::VecDeque;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::net::{TcpListener, TcpStream};
+use tokio::sync::watch;
 use tokio::task::JoinSet;
-use tokio_tungstenite::tungstenite::protocol::WebSocketConfig;
+use tokio_tungstenite::tungstenite::protocol::frame::coding::CloseCode;
+use tokio_tungstenite::tungstenite::protocol::{CloseFrame, WebSocketConfig};
 use tokio_tungstenite::tungstenite::Message;
 
 /// mDNS service type the watch looks for in the local network.
 pub const SERVICE_TYPE: &str = "_osctoolhr._tcp.local.";
+
+/// Close code for "the desktop app is quitting". Must match CLOSE_APP_QUIT in
+/// the watch app (HrService.kt).
+pub const CLOSE_APP_QUIT: u16 = 4000;
 
 const HISTORY: Duration = Duration::from_secs(120);
 const IDLE_TIMEOUT: Duration = Duration::from_secs(45);
@@ -271,7 +280,7 @@ impl HrState {
 
 /// Accept watch connections until the future is dropped. Dropping it also
 /// closes every open connection.
-pub async fn serve<F>(listener: TcpListener, host_name: String, on_event: F)
+pub async fn serve<F>(listener: TcpListener, host_name: String, quitting: watch::Receiver<bool>, on_event: F)
 where
     F: Fn(HrEvent) + Send + Sync + 'static,
 {
@@ -282,7 +291,7 @@ where
         match listener.accept().await {
             Ok((stream, _)) => {
                 let _ = stream.set_nodelay(true);
-                connections.spawn(handle(stream, host_name.clone(), on_event.clone()));
+                connections.spawn(handle(stream, host_name.clone(), quitting.clone(), on_event.clone()));
             }
             Err(_) => tokio::time::sleep(Duration::from_millis(200)).await,
         }
@@ -297,7 +306,12 @@ impl Drop for ConnectionGuard {
     }
 }
 
-async fn handle(stream: TcpStream, host_name: String, on_event: Arc<dyn Fn(HrEvent) + Send + Sync>) {
+async fn handle(
+    stream: TcpStream,
+    host_name: String,
+    mut quitting: watch::Receiver<bool>,
+    on_event: Arc<dyn Fn(HrEvent) + Send + Sync>,
+) {
     // Heart rate frames are tiny; refuse anything big.
     let config = WebSocketConfig::default()
         .max_message_size(Some(4096))
@@ -316,7 +330,17 @@ async fn handle(stream: TcpStream, host_name: String, on_event: Arc<dyn Fn(HrEve
     }
 
     loop {
-        match tokio::time::timeout(IDLE_TIMEOUT, rx.next()).await {
+        let next = tokio::select! {
+            next = tokio::time::timeout(IDLE_TIMEOUT, rx.next()) => Some(next),
+            _ = quitting.wait_for(|q| *q) => None,
+        };
+        let Some(next) = next else {
+            // The app is quitting: tell the watch so it stops instead of retrying.
+            let bye = CloseFrame { code: CloseCode::from(CLOSE_APP_QUIT), reason: "app closed".into() };
+            let _ = tx.send(Message::Close(Some(bye))).await;
+            break;
+        };
+        match next {
             Ok(Some(Ok(Message::Text(text)))) => {
                 if let Some(event) = parse_message(text.as_str()) {
                     on_event(event);
