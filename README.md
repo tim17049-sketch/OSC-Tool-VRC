@@ -1,11 +1,15 @@
 # OSC Tool VRC
 
-Open-Source-Tool für die VRChat-Chatbox: zeigt deinen Live-Puls von der Galaxy
-Watch, die laufende Musik, Uhrzeit und eigene Nachrichten über deinem Avatar.
-Läuft als Programm unter Windows 10 und 11 sowie unter Linux.
+Open-Source-Tool für die VRChat-Chatbox: zeigt deinen Live-Puls von deiner
+Wear-OS-Uhr (z. B. Galaxy Watch), die laufende Musik samt Songtext, Uhrzeit und
+eigene Nachrichten über deinem Avatar. Dazu ein Furry-Scanner zum Spaß,
+Avatar-Parameter per Klick und ein OSC-Monitor. Läuft unter Windows 10 und 11
+sowie unter Linux.
 
-*Open source OSC tool for the VRChat chatbox with live heart rate from a Wear OS
-watch. The app itself is available in German and English.*
+*Open source OSC tool for VRChat on Windows and Linux: live heart rate from a
+Wear OS watch, music with synced lyrics, custom messages, a just-for-fun furry
+scanner, avatar parameters and an OSC monitor. The app itself is available in
+German and English.*
 
 ![Übersicht der App](docs/screenshot.png)
 
@@ -93,7 +97,8 @@ Die App gibt es nicht im Play Store; sie wird einmalig per ADB installiert.
 
 1. Auf der Uhr: **Einstellungen → Info zur Uhr → Softwareinformationen**, dort
    siebenmal auf **Softwareversion** tippen. Das schaltet die
-   Entwickleroptionen frei.
+   Entwickleroptionen frei. Auf anderen Wear-OS-Uhren (Pixel Watch, …) heißt
+   es meist **Einstellungen → System → Info** und **Build-Nummer**.
 2. **Einstellungen → Entwickleroptionen → ADB-Debugging** und
    **Drahtloses Debugging** einschalten (die Uhr muss im WLAN sein).
 3. In **Drahtloses Debugging** auf **Neues Gerät koppeln** tippen. Die Uhr
