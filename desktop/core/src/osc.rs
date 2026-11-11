@@ -78,10 +78,7 @@ mod tests {
         assert_eq!(clamped.encode_utf16().count(), CHATBOX_MAX_CHARS);
         assert!(clamped.ends_with('…'));
 
-        let many = (0..20)
-            .map(|i| i.to_string())
-            .collect::<Vec<_>>()
-            .join("\n");
+        let many = (0..20).map(|i| i.to_string()).collect::<Vec<_>>().join("\n");
         assert_eq!(clamp_chatbox(&many).lines().count(), CHATBOX_MAX_LINES);
     }
 

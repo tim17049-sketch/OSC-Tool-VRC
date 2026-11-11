@@ -81,10 +81,7 @@ mod tests {
 
     #[test]
     fn drops_lines_without_value() {
-        assert_eq!(
-            render("❤ {hr}\n🎵 {song}\n{time}", &values()),
-            "❤ 92\n21:04"
-        );
+        assert_eq!(render("❤ {hr}\n🎵 {song}\n{time}", &values()), "❤ 92\n21:04");
     }
 
     #[test]

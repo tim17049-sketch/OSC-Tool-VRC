@@ -361,11 +361,9 @@ impl Inner {
             };
             let period = Duration::from_millis(60_000 / bpm.max(20) as u64);
             let flash = Duration::from_millis(120).min(period / 2);
-            self.send(osc::avatar_param("isHRBeat", OscType::Bool(true)))
-                .await;
+            self.send(osc::avatar_param("isHRBeat", OscType::Bool(true))).await;
             tokio::time::sleep(flash).await;
-            self.send(osc::avatar_param("isHRBeat", OscType::Bool(false)))
-                .await;
+            self.send(osc::avatar_param("isHRBeat", OscType::Bool(false))).await;
             tokio::time::sleep(period - flash).await;
         }
     }
@@ -377,8 +375,8 @@ impl Inner {
             let timeout = Duration::from_secs(self.cfg.read().unwrap().hr_timeout_s);
             let lost = {
                 let mut hr = self.hr.lock().unwrap();
-                let stale =
-                    hr.bpm.is_some() && hr.last_sample.is_some_and(|t| t.elapsed() > timeout);
+                let stale = hr.bpm.is_some()
+                    && hr.last_sample.is_some_and(|t| t.elapsed() > timeout);
                 if stale {
                     hr.bpm = None;
                 }
@@ -439,11 +437,7 @@ impl Inner {
         }
         let local = chrono::Local::now();
         let time = if cfg.time_24h { "%H:%M" } else { "%-I:%M %p" };
-        let date = if cfg.language == "en" {
-            "%Y-%m-%d"
-        } else {
-            "%d.%m.%Y"
-        };
+        let date = if cfg.language == "en" { "%Y-%m-%d" } else { "%d.%m.%Y" };
         v.insert("time", Some(local.format(time).to_string()));
         v.insert("date", Some(local.format(date).to_string()));
         v
@@ -456,11 +450,7 @@ impl Inner {
     /// The manually sent message, as long as it is still showing.
     fn active_message(&self) -> Option<String> {
         let mut chat = self.chat.lock().unwrap();
-        if chat
-            .message
-            .as_ref()
-            .is_some_and(|m| Instant::now() >= m.until)
-        {
+        if chat.message.as_ref().is_some_and(|m| Instant::now() >= m.until) {
             chat.message = None;
         }
         chat.message.as_ref().map(|m| m.text.clone())
@@ -511,11 +501,7 @@ impl Inner {
                 continue;
             }
 
-            let nap = if has_work {
-                wait
-            } else {
-                Duration::from_millis(500)
-            };
+            let nap = if has_work { wait } else { Duration::from_millis(500) };
             tokio::select! {
                 _ = tokio::time::sleep(nap) => {}
                 _ = self.wake_chat.notified() => {}
@@ -552,9 +538,7 @@ impl Inner {
         let cfg = self.cfg();
         let now = Instant::now();
         let message = self.active_message();
-        let preview = message
-            .clone()
-            .unwrap_or_else(|| self.render_template(&cfg));
+        let preview = message.clone().unwrap_or_else(|| self.render_template(&cfg));
 
         let hr = {
             let hr = self.hr.lock().unwrap();
