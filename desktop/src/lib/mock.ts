@@ -83,6 +83,9 @@ export function createMockBackend(): Backend {
       date: now.toLocaleDateString(config.language === "en" ? "sv-SE" : "de-DE"),
       cpu: "23%",
       ram: "61%",
+      cpu_temp: "58°C",
+      gpu: "74%",
+      gpu_temp: "67°C",
     };
     return {
       hr: {
@@ -106,6 +109,9 @@ export function createMockBackend(): Backend {
       media,
       cpu: 23,
       ram: 61,
+      cpuTemp: 58,
+      gpu: 74,
+      gpuTemp: 67,
       network: {
         hostName: "GAMING-PC",
         addresses: ["192.168.178.42"],

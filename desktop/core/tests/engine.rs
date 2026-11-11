@@ -37,7 +37,8 @@ async fn collect(
 }
 
 fn has(seen: &[(String, Vec<OscType>)], addr: &str, arg: &OscType) -> bool {
-    seen.iter().any(|(a, args)| a == addr && args.first() == Some(arg))
+    seen.iter()
+        .any(|(a, args)| a == addr && args.first() == Some(arg))
 }
 
 fn chatbox_texts(seen: &[(String, Vec<OscType>)]) -> Vec<String> {
@@ -89,7 +90,11 @@ async fn heart_rate_reaches_chatbox_and_avatar() {
             && chatbox_texts(seen).iter().any(|t| t == "HR 87")
     })
     .await;
-    assert!(has(&seen, "/avatar/parameters/isHRConnected", &OscType::Bool(true)));
+    assert!(has(
+        &seen,
+        "/avatar/parameters/isHRConnected",
+        &OscType::Bool(true)
+    ));
     assert!(has(&seen, "/avatar/parameters/onesHR", &OscType::Int(7)));
     assert!(has(&seen, "/avatar/parameters/tensHR", &OscType::Int(8)));
 
@@ -100,17 +105,27 @@ async fn heart_rate_reaches_chatbox_and_avatar() {
 
     // A typed message replaces the template ...
     engine.send_message("hello world");
-    collect(&vrchat, |seen| chatbox_texts(seen).iter().any(|t| t == "hello world")).await;
+    collect(&vrchat, |seen| {
+        chatbox_texts(seen).iter().any(|t| t == "hello world")
+    })
+    .await;
 
     // ... and losing the watch drops the heart rate line and the avatar flag.
     engine.send_message("");
     drop(watch);
     let seen = collect(&vrchat, |seen| {
-        has(seen, "/avatar/parameters/isHRConnected", &OscType::Bool(false))
-            && chatbox_texts(seen).iter().any(|t| t.is_empty())
+        has(
+            seen,
+            "/avatar/parameters/isHRConnected",
+            &OscType::Bool(false),
+        ) && chatbox_texts(seen).iter().any(|t| t.is_empty())
     })
     .await;
-    assert!(has(&seen, "/avatar/parameters/isHRActive", &OscType::Bool(false)));
+    assert!(has(
+        &seen,
+        "/avatar/parameters/isHRActive",
+        &OscType::Bool(false)
+    ));
     assert_eq!(engine.snapshot().hr.bpm, None);
 }
 

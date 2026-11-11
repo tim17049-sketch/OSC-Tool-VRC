@@ -11,8 +11,8 @@ watch. The app itself is available in German and English.*
 
 ## Was es kann
 
-- **Chatbox-Vorlage** mit Platzhaltern für Puls, Musik, Uhrzeit, Datum, CPU und
-  RAM. Zeilen ohne Inhalt verschwinden von selbst.
+- **Chatbox-Vorlage** mit Platzhaltern für Puls, Musik, Uhrzeit, Datum, CPU, RAM und
+  GPU (Last und Temperatur). Zeilen ohne Inhalt verschwinden von selbst.
 - **Live-Puls von der Uhr** über die mitgelieferte Wear-OS-App, direkt per WLAN
   an den PC. Kein Konto, keine Cloud, kein Handy dazwischen.
 - **Puls am Avatar** über die Parameter von HRtoVRChat_OSC (`HR`, `HRPercent`,
@@ -112,7 +112,14 @@ Die Uhr misst weiter, wenn das Display aus ist. Zum Beenden **Stopp** tippen.
 | `{song}` | Interpret – Titel |
 | `{title}` `{artist}` | Titel und Interpret einzeln |
 | `{time}` `{date}` | Uhrzeit und Datum |
-| `{cpu}` `{ram}` | Auslastung des PCs |
+| `{cpu}` `{ram}` `{gpu}` | Auslastung von CPU, RAM und Grafikkarte |
+| `{cpu_temp}` `{gpu_temp}` | Temperatur von CPU und Grafikkarte (siehe unten) |
+
+Die Werte kommen aus denselben Quellen wie im Task-Manager, ohne Treiber und
+ohne Adminrechte. Die GPU-Temperatur braucht Windows 10 2004 oder neuer und
+eine dedizierte Grafikkarte. Die CPU-Temperatur stammt aus den ACPI-Thermalzonen
+des Mainboards; nicht jedes Board meldet dort einen Wert. Fehlt ein Wert,
+verschwindet die Zeile wie bei den anderen Platzhaltern.
 
 ## Selbst bauen
 

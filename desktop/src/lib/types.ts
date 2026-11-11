@@ -39,6 +39,9 @@ export interface Snapshot {
   media: { title: string; artist: string } | null;
   cpu: number;
   ram: number;
+  cpuTemp: number | null;
+  gpu: number | null;
+  gpuTemp: number | null;
   network: {
     hostName: string;
     addresses: string[];

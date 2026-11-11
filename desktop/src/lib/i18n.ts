@@ -74,6 +74,9 @@ const de = {
   "ph.date": "Datum",
   "ph.cpu": "CPU-Last",
   "ph.ram": "RAM-Last",
+  "ph.cpu_temp": "CPU-Temperatur",
+  "ph.gpu": "GPU-Last",
+  "ph.gpu_temp": "GPU-Temperatur",
 
   "watch.title": "Uhr verbinden",
   "watch.step1": "Installiere die Watch-App aus diesem Projekt auf deiner Galaxy Watch.",
@@ -187,6 +190,9 @@ const en: typeof de = {
   "ph.date": "Date",
   "ph.cpu": "CPU load",
   "ph.ram": "RAM load",
+  "ph.cpu_temp": "CPU temperature",
+  "ph.gpu": "GPU load",
+  "ph.gpu_temp": "GPU temperature",
 
   "watch.title": "Connect watch",
   "watch.step1": "Install the watch app from this project on your Galaxy Watch.",

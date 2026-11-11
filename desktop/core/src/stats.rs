@@ -1,15 +1,20 @@
+use crate::sensors::Sensors;
 use sysinfo::System;
 
-/// CPU and memory load of the whole machine. Only global counters are read;
-/// the process list is never touched.
+/// CPU, memory and GPU load plus temperatures of the whole machine. Only
+/// global counters are read; the process list is never touched.
 pub struct Stats {
     sys: System,
+    sensors: Sensors,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Load {
     pub cpu: f32,
     pub ram: f32,
+    pub cpu_temp: Option<f32>,
+    pub gpu: Option<f32>,
+    pub gpu_temp: Option<f32>,
 }
 
 impl Default for Stats {
@@ -23,7 +28,10 @@ impl Stats {
         let mut sys = System::new();
         sys.refresh_cpu_usage();
         sys.refresh_memory();
-        Self { sys }
+        Self {
+            sys,
+            sensors: Sensors::new(),
+        }
     }
 
     /// Call every couple of seconds; CPU usage is measured between calls.
@@ -36,9 +44,13 @@ impl Stats {
         } else {
             0.0
         };
+        let sensors = self.sensors.sample();
         Load {
             cpu: self.sys.global_cpu_usage(),
             ram,
+            cpu_temp: sensors.cpu_temp,
+            gpu: sensors.gpu,
+            gpu_temp: sensors.gpu_temp,
         }
     }
 }

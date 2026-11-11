@@ -7,7 +7,7 @@ pub type Values = HashMap<&'static str, Option<String>>;
 /// All placeholders the engine fills in, in the order the UI lists them.
 pub const PLACEHOLDERS: &[&str] = &[
     "hr", "hr_trend", "heart", "hr_min", "hr_max", "hr_avg", "song", "title", "artist", "time",
-    "date", "cpu", "ram",
+    "date", "cpu", "cpu_temp", "ram", "gpu", "gpu_temp",
 ];
 
 /// Replace `{placeholders}` in `template`.
@@ -81,7 +81,10 @@ mod tests {
 
     #[test]
     fn drops_lines_without_value() {
-        assert_eq!(render("❤ {hr}\n🎵 {song}\n{time}", &values()), "❤ 92\n21:04");
+        assert_eq!(
+            render("❤ {hr}\n🎵 {song}\n{time}", &values()),
+            "❤ 92\n21:04"
+        );
     }
 
     #[test]

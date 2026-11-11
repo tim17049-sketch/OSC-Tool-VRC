@@ -17,7 +17,7 @@
     { label: "tpl.group.pulse", names: ["hr", "hr_trend", "heart", "hr_min", "hr_max", "hr_avg"] },
     { label: "tpl.group.music", names: ["song", "title", "artist"] },
     { label: "tpl.group.time", names: ["time", "date"] },
-    { label: "tpl.group.system", names: ["cpu", "ram"] },
+    { label: "tpl.group.system", names: ["cpu", "cpu_temp", "ram", "gpu", "gpu_temp"] },
   ];
 
   let editor: HTMLTextAreaElement;

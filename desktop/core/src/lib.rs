@@ -9,6 +9,7 @@ pub mod engine;
 pub mod hr;
 pub mod media;
 pub mod osc;
+pub mod sensors;
 pub mod stats;
 pub mod template;
 

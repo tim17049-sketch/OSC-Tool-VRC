@@ -18,7 +18,12 @@ mdns-sd = "0.13"
 if-addrs = "0.13"
 
 [target.'cfg(windows)'.dependencies]
-windows = { version = "0.58", features = ["Foundation", "Media_Control"] }
+windows = { version = "0.58", features = [
+    "Foundation",
+    "Media_Control",
+    "Wdk_Graphics_Direct3D",
+    "Win32_System_Performance",
+] }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["rt-multi-thread", "net", "sync", "time", "macros"] }

@@ -27,7 +27,9 @@ const IDLE_TIMEOUT: Duration = Duration::from_secs(45);
 #[derive(Debug, Clone, PartialEq)]
 pub enum HrEvent {
     Connected,
-    Hello { device: Option<String> },
+    Hello {
+        device: Option<String>,
+    },
     Sample(u16),
     /// Watch is connected but the sensor reports no reading (not worn).
     NoContact,
@@ -49,7 +51,12 @@ pub fn parse_message(text: &str) -> Option<HrEvent> {
         match serde_json::from_str::<WatchMsg>(text).ok()? {
             WatchMsg::Hello { device } => {
                 let device = device
-                    .map(|d| d.chars().filter(|c| !c.is_control()).take(40).collect::<String>())
+                    .map(|d| {
+                        d.chars()
+                            .filter(|c| !c.is_control())
+                            .take(40)
+                            .collect::<String>()
+                    })
                     .filter(|d| !d.trim().is_empty());
                 return Some(HrEvent::Hello { device });
             }
@@ -159,7 +166,11 @@ impl Drop for ConnectionGuard {
     }
 }
 
-async fn handle(stream: TcpStream, host_name: String, on_event: Arc<dyn Fn(HrEvent) + Send + Sync>) {
+async fn handle(
+    stream: TcpStream,
+    host_name: String,
+    on_event: Arc<dyn Fn(HrEvent) + Send + Sync>,
+) {
     // Heart rate frames are tiny; refuse anything big.
     let config = WebSocketConfig::default()
         .max_message_size(Some(4096))
@@ -200,9 +211,19 @@ impl Advertiser {
     pub fn start(port: u16, host_name: &str) -> Option<Self> {
         let label: String = host_name
             .chars()
-            .map(|c| if c.is_ascii_alphanumeric() || c == '-' { c } else { '-' })
+            .map(|c| {
+                if c.is_ascii_alphanumeric() || c == '-' {
+                    c
+                } else {
+                    '-'
+                }
+            })
             .collect();
-        let label = if label.is_empty() { "pc".to_string() } else { label };
+        let label = if label.is_empty() {
+            "pc".to_string()
+        } else {
+            label
+        };
         let daemon = ServiceDaemon::new().ok()?;
         // IPv4 only: the watch connects to whatever address it resolves, and
         // link-local IPv6 addresses are no use to it.
@@ -251,13 +272,24 @@ mod tests {
 
     #[test]
     fn parses_json_and_plain_numbers() {
-        assert_eq!(parse_message(r#"{"type":"hr","bpm":72}"#), Some(HrEvent::Sample(72)));
-        assert_eq!(parse_message(r#"{"type":"hr","bpm":71.6,"ts":1}"#), Some(HrEvent::Sample(72)));
+        assert_eq!(
+            parse_message(r#"{"type":"hr","bpm":72}"#),
+            Some(HrEvent::Sample(72))
+        );
+        assert_eq!(
+            parse_message(r#"{"type":"hr","bpm":71.6,"ts":1}"#),
+            Some(HrEvent::Sample(72))
+        );
         assert_eq!(parse_message(" 88 "), Some(HrEvent::Sample(88)));
-        assert_eq!(parse_message(r#"{"type":"hr","bpm":0}"#), Some(HrEvent::NoContact));
+        assert_eq!(
+            parse_message(r#"{"type":"hr","bpm":0}"#),
+            Some(HrEvent::NoContact)
+        );
         assert_eq!(
             parse_message(r#"{"type":"hello","device":"Galaxy Watch7"}"#),
-            Some(HrEvent::Hello { device: Some("Galaxy Watch7".into()) })
+            Some(HrEvent::Hello {
+                device: Some("Galaxy Watch7".into())
+            })
         );
     }
 
