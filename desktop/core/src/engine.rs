@@ -4,6 +4,7 @@ use crate::media::{self, Media};
 use crate::osc::{self, clamp_chatbox};
 use crate::stats::{self, Load, Stats};
 use crate::template::{self, Values};
+use crate::vr::{Batteries, Battery, SteamVr};
 use rosc::OscType;
 use serde::Serialize;
 use std::sync::{Arc, Mutex, RwLock};
@@ -24,6 +25,8 @@ pub struct Snapshot {
     pub cpu_temp: Option<f32>,
     pub gpu: Option<f32>,
     pub gpu_temp: Option<f32>,
+    /// Battery levels reported by SteamVR.
+    pub vr: Batteries,
     pub network: NetworkSnapshot,
 }
 
@@ -92,6 +95,7 @@ struct ServerState {
 struct EnvState {
     media: Option<Media>,
     load: Load,
+    vr: Batteries,
     addresses: Vec<String>,
 }
 
@@ -434,6 +438,9 @@ impl Inner {
             v.insert("cpu_temp", env.load.cpu_temp.map(|t| format!("{t:.0}°C")));
             v.insert("gpu", env.load.gpu.map(|g| format!("{g:.0}%")));
             v.insert("gpu_temp", env.load.gpu_temp.map(|t| format!("{t:.0}°C")));
+            v.insert("hmd_bat", env.vr.hmd.as_ref().map(Battery::display));
+            v.insert("left_bat", env.vr.left.as_ref().map(Battery::display));
+            v.insert("right_bat", env.vr.right.as_ref().map(Battery::display));
         }
         let local = chrono::Local::now();
         let time = if cfg.time_24h { "%H:%M" } else { "%-I:%M %p" };
@@ -513,15 +520,23 @@ impl Inner {
 
     async fn run_environment(self: Arc<Self>) {
         let mut stats = Stats::new();
+        let mut steamvr = Some(SteamVr::default());
         let mut round = 0u32;
         loop {
             let load = stats.sample();
-            let media = tokio::task::spawn_blocking(media::now_playing)
-                .await
-                .unwrap_or(None);
+            // SteamVR and the media controls may block for a moment.
+            let mut vr = steamvr.take().unwrap_or_default();
+            let (vr, batteries, media) = tokio::task::spawn_blocking(move || {
+                let batteries = vr.sample();
+                (vr, batteries, media::now_playing())
+            })
+            .await
+            .unwrap_or_default();
+            steamvr = Some(vr);
             {
                 let mut env = self.env.lock().unwrap();
                 env.load = load;
+                env.vr = batteries;
                 env.media = media;
                 if round % 5 == 0 {
                     env.addresses = hr::local_addresses();
@@ -567,9 +582,9 @@ impl Inner {
                 error: chat.error.clone(),
             }
         };
-        let (media, load, addresses) = {
+        let (media, load, vr, addresses) = {
             let env = self.env.lock().unwrap();
-            (env.media.clone(), env.load, env.addresses.clone())
+            (env.media.clone(), env.load, env.vr, env.addresses.clone())
         };
         let network = {
             let server = self.server.lock().unwrap();
@@ -591,6 +606,7 @@ impl Inner {
             cpu_temp: load.cpu_temp,
             gpu: load.gpu,
             gpu_temp: load.gpu_temp,
+            vr,
             network,
         }
     }

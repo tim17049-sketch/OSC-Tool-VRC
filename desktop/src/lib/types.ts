@@ -42,6 +42,7 @@ export interface Snapshot {
   cpuTemp: number | null;
   gpu: number | null;
   gpuTemp: number | null;
+  vr: { hmd: Battery | null; left: Battery | null; right: Battery | null };
   network: {
     hostName: string;
     addresses: string[];
@@ -50,6 +51,11 @@ export interface Snapshot {
     discoverable: boolean;
     hrError: string | null;
   };
+}
+
+export interface Battery {
+  percent: number;
+  charging: boolean;
 }
 
 export interface Backend {

@@ -86,6 +86,9 @@ export function createMockBackend(): Backend {
       cpu_temp: "58°C",
       gpu: "74%",
       gpu_temp: "67°C",
+      hmd_bat: "72%",
+      left_bat: "85%",
+      right_bat: "81%",
     };
     return {
       hr: {
@@ -112,6 +115,11 @@ export function createMockBackend(): Backend {
       cpuTemp: 58,
       gpu: 74,
       gpuTemp: 67,
+      vr: {
+        hmd: { percent: 72, charging: false },
+        left: { percent: 85, charging: false },
+        right: { percent: 81, charging: false },
+      },
       network: {
         hostName: "GAMING-PC",
         addresses: ["192.168.178.42"],

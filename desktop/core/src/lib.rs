@@ -12,6 +12,7 @@ pub mod osc;
 pub mod sensors;
 pub mod stats;
 pub mod template;
+pub mod vr;
 
 pub use config::Config;
 pub use engine::{Engine, Snapshot};

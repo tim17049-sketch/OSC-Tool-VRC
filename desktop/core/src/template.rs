@@ -7,7 +7,7 @@ pub type Values = HashMap<&'static str, Option<String>>;
 /// All placeholders the engine fills in, in the order the UI lists them.
 pub const PLACEHOLDERS: &[&str] = &[
     "hr", "hr_trend", "heart", "hr_min", "hr_max", "hr_avg", "song", "title", "artist", "time",
-    "date", "cpu", "cpu_temp", "ram", "gpu", "gpu_temp",
+    "date", "cpu", "cpu_temp", "ram", "gpu", "gpu_temp", "hmd_bat", "left_bat", "right_bat",
 ];
 
 /// Replace `{placeholders}` in `template`.

@@ -18,6 +18,7 @@
     { label: "tpl.group.music", names: ["song", "title", "artist"] },
     { label: "tpl.group.time", names: ["time", "date"] },
     { label: "tpl.group.system", names: ["cpu", "cpu_temp", "ram", "gpu", "gpu_temp"] },
+    { label: "tpl.group.vr", names: ["hmd_bat", "left_bat", "right_bat"] },
   ];
 
   let editor: HTMLTextAreaElement;
