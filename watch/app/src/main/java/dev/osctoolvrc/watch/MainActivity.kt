@@ -215,7 +215,11 @@ private fun MainScreen(
 
 @Composable
 private fun status(state: UiState): String = when {
-    !state.running -> stringResource(R.string.status_idle)
+    !state.running -> when (state.ended) {
+        Ended.PcClosed -> stringResource(R.string.status_ended_pc_closed)
+        Ended.Unreachable -> stringResource(R.string.status_ended_unreachable)
+        null -> stringResource(R.string.status_idle)
+    }
     state.noContact -> stringResource(R.string.status_no_contact)
     else -> when (state.link) {
         Link.Idle, Link.NoWifi -> stringResource(R.string.status_no_wifi)

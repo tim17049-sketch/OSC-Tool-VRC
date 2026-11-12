@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { app, updateConfig } from "../lib/state.svelte";
+  import { app, deviceName, updateConfig } from "../lib/state.svelte";
   import { t } from "../lib/i18n";
   import History from "../components/History.svelte";
   import Switch from "../components/Switch.svelte";
@@ -8,7 +8,22 @@
   const snap = $derived(app.snap!);
   const hr = $derived(snap.hr);
   const net = $derived(snap.network);
-  const device = $derived(hr.device ?? t("pulse.unknownDevice"));
+  const device = $derived(deviceName(hr.device, t("pulse.unknownDevice")));
+  const info = $derived(hr.connected ? hr.device : null);
+  const maker = $derived(
+    info?.manufacturer ? info.manufacturer.charAt(0).toUpperCase() + info.manufacturer.slice(1) : null,
+  );
+  const details = $derived(
+    info
+      ? ([
+          ["device.maker", maker],
+          ["device.model", info.model],
+          ["device.os", info.os],
+          ["device.sensor", info.sensor],
+          ["device.app", info.app],
+        ] as const).filter(([, value]) => value)
+      : [],
+  );
 
   const percent = $derived(
     hr.bpm === null
@@ -53,6 +68,30 @@
   {/if}
 
   <div class="columns">
+    {#if info}
+      <section class="panel device" aria-labelledby="device-title">
+        <h2 id="device-title">{t("device.title")}</h2>
+        <p class="name">{device}</p>
+        {#if info.battery !== null}
+          <div class="battery" role="img" aria-label="{t('device.battery')} {info.battery} %">
+            <div class="level" class:low={info.battery <= 15} style:width="{info.battery}%"></div>
+          </div>
+          <p class="small muted num">
+            {t("pulse.battery", { n: info.battery })}{info.charging ? ` · ${t("pulse.charging")}` : ""}
+          </p>
+        {/if}
+        {#if details.length}
+          <dl>
+            {#each details as [label, value]}
+              <div><dt>{t(label)}</dt><dd>{value}</dd></div>
+            {/each}
+          </dl>
+        {/if}
+        {#if !info.app}
+          <p class="small muted">{t("device.oldApp")}</p>
+        {/if}
+      </section>
+    {:else}
     <section class="panel" aria-labelledby="watch-title">
       <h2 id="watch-title">{t("watch.title")}</h2>
       <ol>
@@ -67,9 +106,10 @@
         {:else}
           <p class="small warn">{t("watch.noAddress")}</p>
         {/each}
-        <p class="small muted">{t("watch.firewall")}</p>
+        <p class="small muted">{t("watch.firewall", { port: net.hrPort })}</p>
       </div>
     </section>
+    {/if}
 
     <section class="panel" aria-labelledby="history-title">
       <h2 id="history-title">{t("history.title")}</h2>
@@ -211,6 +251,61 @@
 
   .history {
     margin-top: 16px;
+  }
+
+  .device {
+    display: grid;
+    gap: 10px;
+    align-content: start;
+  }
+
+  .name {
+    margin-top: 4px;
+    font: 500 24px/1.2 var(--display);
+    letter-spacing: -0.01em;
+    user-select: text;
+  }
+
+  .battery {
+    height: 8px;
+    border-radius: 999px;
+    background: var(--raised);
+    overflow: hidden;
+  }
+
+  .level {
+    height: 100%;
+    border-radius: 999px;
+    background: var(--signal);
+  }
+
+  .level.low {
+    background: var(--warn);
+  }
+
+  dl {
+    display: grid;
+    gap: 0;
+    margin: 6px 0 0;
+    user-select: text;
+  }
+
+  dl div {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 7px 0;
+    border-top: 1px solid var(--line);
+    font-size: 14px;
+  }
+
+  dl dt {
+    color: var(--muted);
+  }
+
+  dl dd {
+    margin: 0;
+    text-align: right;
   }
 
   .avatar {

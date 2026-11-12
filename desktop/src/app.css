@@ -8,6 +8,12 @@
   --pulse: #ff5c8a;
   --signal: #6ee7c8;
   --warn: #ffc66b;
+  --line-hover: #4b4380;
+  --on-pulse: #2a0b18;
+  --scene-top: #100e22;
+  --scene-bottom: #1a1636;
+  --figure: #322b5c;
+  --trace: #191530;
 
   --display: "Unbounded Variable", "Segoe UI", sans-serif;
   --body: "Instrument Sans Variable", "Segoe UI", system-ui, sans-serif;
@@ -121,12 +127,12 @@ select {
 .btn.primary {
   background: var(--pulse);
   border-color: var(--pulse);
-  color: #2a0b18;
+  color: var(--on-pulse);
 }
 
 .btn.primary:hover:not(:disabled) {
-  background: #ff769c;
-  border-color: #ff769c;
+  background: color-mix(in srgb, var(--pulse) 85%, white);
+  border-color: color-mix(in srgb, var(--pulse) 85%, white);
 }
 
 .btn.quiet {
@@ -174,13 +180,13 @@ textarea.input {
 }
 
 .input:hover {
-  border-color: #4b4380;
+  border-color: var(--line-hover);
 }
 
 .input:focus-visible {
   outline: none;
   border-color: var(--signal);
-  box-shadow: 0 0 0 3px rgba(110, 231, 200, 0.18);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--signal) 18%, transparent);
 }
 
 input[type="range"] {
@@ -238,7 +244,7 @@ input[type="range"]::-moz-range-thumb {
 
 .dot.live {
   background: var(--signal);
-  box-shadow: 0 0 0 4px rgba(110, 231, 200, 0.16);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--signal) 16%, transparent);
 }
 
 .dot.warn {

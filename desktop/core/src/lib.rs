@@ -7,8 +7,10 @@
 pub mod config;
 pub mod engine;
 pub mod hr;
+pub mod lyrics;
 pub mod media;
 pub mod osc;
+pub mod scanner;
 pub mod sensors;
 pub mod stats;
 pub mod template;

@@ -1,25 +1,41 @@
 # OSC Tool VRC
 
-Open-Source-Tool für die VRChat-Chatbox: zeigt deinen Live-Puls von der Galaxy
-Watch, die laufende Musik, Uhrzeit und eigene Nachrichten über deinem Avatar.
-Läuft als Programm unter Windows 10 und 11.
+Open-Source-Tool für die VRChat-Chatbox: zeigt deinen Live-Puls von deiner
+Wear-OS-Uhr (z. B. Galaxy Watch), die laufende Musik samt Songtext, Uhrzeit und
+eigene Nachrichten über deinem Avatar. Dazu ein Furry-Scanner zum Spaß,
+Avatar-Parameter per Klick und ein OSC-Monitor. Läuft unter Windows 10 und 11
+sowie unter Linux.
 
-*Open source OSC tool for the VRChat chatbox with live heart rate from a Wear OS
-watch. The app itself is available in German and English.*
+*Open source OSC tool for VRChat on Windows and Linux: live heart rate from a
+Wear OS watch, music with synced lyrics, custom messages, a just-for-fun furry
+scanner, avatar parameters and an OSC monitor. The app itself is available in
+German and English.*
 
 ![Übersicht der App](docs/screenshot.png)
 
 ## Was es kann
 
-- **Chatbox-Vorlage** mit Platzhaltern für Puls, Musik, Uhrzeit, Datum, CPU, RAM und
-  GPU (Last und Temperatur) sowie
-  den Akkustand von Headset und Controllern aus SteamVR. Zeilen ohne Inhalt verschwinden von selbst.
+- **Chatbox-Vorlage** mit Platzhaltern für Puls, Musik, Uhrzeit, Datum, CPU, RAM,
+  GPU (Last und Temperatur) und den Akkustand von Headset und Controllern aus
+  SteamVR. Zeilen ohne Inhalt verschwinden von selbst.
 - **Live-Puls von der Uhr** über die mitgelieferte Wear-OS-App, direkt per WLAN
   an den PC. Kein Konto, keine Cloud, kein Handy dazwischen.
 - **Puls am Avatar** über die Parameter von HRtoVRChat_OSC (`HR`, `HRPercent`,
   `isHRBeat` …), die gängige Puls-Prefabs verstehen.
 - **Eigene Nachrichten** tippen und senden, mit Tipp-Anzeige in VRChat.
-- **Musik** aus Spotify, Browser und Co. über die Mediensteuerung von Windows.
+- **Musik** aus Spotify, Browser und Co. – unter Windows über dessen
+  Mediensteuerung, unter Linux über MPRIS (das können praktisch alle Player),
+  mit Fortschrittsbalken und auf Wunsch **Songtext live** (von lrclib.net).
+- **Furry-Scanner** 🐾: ein Spaß-Scan mit zufälligem Ergebnis in der Chatbox,
+  per Knopf oder über einen Parameter am Avatar.
+- **Avatar-Parameter senden** (Bool/Int/Float) mit Favoriten, z. B. um
+  Kleidung oder Ohren vom PC aus zu schalten.
+- **OSC-Monitor**: zeigt live, was VRChat an Port 9001 zurückschickt.
+- **Uhr-Infos**: Name, Modell, Wear-OS-Version und Akku der verbundenen Uhr –
+  für jede Wear-OS-Uhr, auch ältere oder neuere Modelle.
+- **Eigene Nachrichten** bleiben auf Wunsch dauerhaft stehen; zuletzt gesendete
+  lassen sich mit einem Klick wiederholen.
+- **Aussehen**: Farbschemata Nacht, Dunkel, AMOLED und Hell, freie Akzentfarbe.
 - Hält VRChats Chatbox-Limit ein (höchstens ein Update alle 1,5 s, 144 Zeichen,
   9 Zeilen), damit die Chatbox nicht gesperrt wird.
 
@@ -27,7 +43,8 @@ watch. The app itself is available in German and English.*
 
 Das Tool spricht ausschließlich über VRChats offizielle
 [OSC-Schnittstelle](https://docs.vrchat.com/docs/osc-overview) mit dem Spiel:
-UDP-Pakete an `127.0.0.1:9000`, genau dafür hat VRChat sie gebaut. Es liest
+UDP-Pakete an `127.0.0.1:9000` und, wenn du den Empfang einschaltest, zurück
+auf Port `9001` – genau dafür hat VRChat sie gebaut. Es liest
 keinen Spielspeicher, lädt nichts in das Spiel, legt kein Overlay darüber und
 fasst den VRChat-Prozess nicht an – nicht einmal, um zu prüfen, ob er läuft.
 Für Easy Anti-Cheat ist es damit ein ganz normales, getrenntes Programm.
@@ -47,17 +64,31 @@ als das geht es mit keinem optischen Sensor.
 
 Dauermessung und WLAN kosten Akku: Rechne auf der Uhr mit deutlich kürzerer
 Laufzeit, solange die Übertragung läuft.
+Damit nichts unnötig läuft, misst die Uhr nur, solange der PC verbunden ist.
+Wird die PC-App beendet, stoppt die Uhr sofort; ist der PC drei Minuten lang
+nicht erreichbar, beendet sie die Übertragung ebenfalls von selbst.
 
 ## Einrichten
 
-### 1. Windows-App
+### 1. PC-App
 
-Installer von der [Releases-Seite](../../releases) laden und starten. Solange es
-noch kein Release gibt: unter [Actions](../../actions) den neuesten Build öffnen
-und das Artefakt `osc-tool-vrc-windows` herunterladen.
+Pakete gibt es auf der [Releases-Seite](../../releases). Solange es noch kein
+Release gibt: unter [Actions](../../actions) den neuesten Build öffnen und das
+passende Artefakt herunterladen.
 
-Fragt Windows beim ersten Start nach der Firewall, erlaube den Zugriff für
-private Netzwerke – sonst erreicht die Uhr den PC nicht.
+**Windows:** Artefakt `osc-tool-vrc-windows`, Installer starten. Fragt Windows
+beim ersten Start nach der Firewall, erlaube den Zugriff für private Netzwerke –
+sonst erreicht die Uhr den PC nicht.
+
+**Linux:** Artefakt `osc-tool-vrc-linux`. Darin liegen:
+
+- `.deb` für Debian, Ubuntu, Mint, Pop!_OS: `sudo apt install ./OSC*.deb`
+- `.rpm` für Fedora, openSUSE: `sudo dnf install ./OSC*.rpm`
+- `.AppImage` für alle anderen: `chmod +x OSC*.AppImage`, dann starten.
+
+VRChat läuft unter Linux über Steam/Proton; OSC funktioniert dort genauso.
+Ist eine Firewall aktiv (z. B. `ufw` oder `firewalld`), gib TCP-Port `9555`
+(Uhr) und UDP-Port `5353` (automatische Suche) im Heimnetz frei.
 
 ### 2. VRChat
 
@@ -70,7 +101,8 @@ Die App gibt es nicht im Play Store; sie wird einmalig per ADB installiert.
 
 1. Auf der Uhr: **Einstellungen → Info zur Uhr → Softwareinformationen**, dort
    siebenmal auf **Softwareversion** tippen. Das schaltet die
-   Entwickleroptionen frei.
+   Entwickleroptionen frei. Auf anderen Wear-OS-Uhren (Pixel Watch, …) heißt
+   es meist **Einstellungen → System → Info** und **Build-Nummer**.
 2. **Einstellungen → Entwickleroptionen → ADB-Debugging** und
    **Drahtloses Debugging** einschalten (die Uhr muss im WLAN sein).
 3. In **Drahtloses Debugging** auf **Neues Gerät koppeln** tippen. Die Uhr
@@ -98,7 +130,7 @@ Die App gibt es nicht im Play Store; sie wird einmalig per ADB installiert.
 
 Uhr und PC ins selbe WLAN, auf der Uhr **VRC Puls** öffnen und **Start**
 tippen. Die Uhr findet den PC selbst. Klappt das in deinem Netz nicht, trägst
-du auf der Uhr die Adresse ein, die die Windows-App unter **Puls** anzeigt.
+du auf der Uhr die Adresse ein, die die PC-App unter **Puls** anzeigt.
 
 Die Uhr misst weiter, wenn das Display aus ist. Zum Beenden **Stopp** tippen.
 
@@ -110,14 +142,19 @@ Die Uhr misst weiter, wenn das Display aus ist. Zum Beenden **Stopp** tippen.
 | `{hr_trend}` | ↑, ↓ oder → |
 | `{heart}` | ❤ und ♡ im Wechsel |
 | `{hr_min}` `{hr_max}` `{hr_avg}` | Tiefst-, Höchst- und Mittelwert seit dem Start |
+| `{watch}` `{watch_battery}` | Name und Akku der Uhr |
 | `{song}` | Interpret – Titel |
-| `{title}` `{artist}` | Titel und Interpret einzeln |
+| `{title}` `{artist}` `{album}` | Titel, Interpret und Album einzeln |
+| `{play}` | ▶ oder ⏸ (pausiert nur sichtbar, wenn „Pausierte Musik weiter anzeigen“ an ist) |
+| `{bar}` | Fortschrittsbalken, z. B. `━━━●──────` |
+| `{pos}` `{dur}` | Position und Länge des Songs |
+| `{lyric}` | Aktuelle Songtext-Zeile. Nur mit diesem Platzhalter fragt die App lrclib.net nach dem Songtext (Interpret und Titel werden dorthin gesendet). |
 | `{time}` `{date}` | Uhrzeit und Datum |
 | `{cpu}` `{ram}` `{gpu}` | Auslastung von CPU, RAM und Grafikkarte |
 | `{cpu_temp}` `{gpu_temp}` | Temperatur von CPU und Grafikkarte (siehe unten) |
 | `{hmd_bat}` `{left_bat}` `{right_bat}` | Akku von Headset und Controllern, ⚡ beim Laden |
 
-Die Werte kommen aus denselben Quellen wie im Task-Manager, ohne Treiber und
+Unter Windows kommen die Werte aus denselben Quellen wie im Task-Manager, ohne Treiber und
 ohne Adminrechte. Die GPU-Temperatur braucht Windows 10 2004 oder neuer und
 eine dedizierte Grafikkarte. Die CPU-Temperatur stammt aus den ACPI-Thermalzonen
 des Mainboards; nicht jedes Board meldet dort einen Wert. Fehlt ein Wert,
@@ -131,7 +168,12 @@ Virtual Desktop ohne SteamVR (VDXR), gibt es keine Werte.
 ## Selbst bauen
 
 Voraussetzungen: [Rust](https://rustup.rs), Node.js 22, für die Watch-App
-JDK 17 und das Android SDK.
+JDK 17 und das Android SDK. Unter Linux zusätzlich die Bibliotheken für Tauri,
+etwa unter Debian/Ubuntu:
+
+```bash
+sudo apt install libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libssl-dev
+```
 
 ```bash
 cd desktop
@@ -154,9 +196,10 @@ simulierten Daten statt VRChat und Uhr.
 
 Aufbau:
 
-- `desktop/core` – Rust-Bibliothek: OSC, Vorlagen, Puls-Empfänger. Tests mit
+- `desktop/core` – Rust-Bibliothek: OSC, Vorlagen, Puls-Empfänger, Songtexte,
+  Furry-Scanner. Tests mit
   `cargo test -p osctool-core`.
-- `desktop/src-tauri` – das Windows-Programm (Tauri).
+- `desktop/src-tauri` – das Programm für Windows und Linux (Tauri).
 - `desktop/src` – Oberfläche (Svelte).
 - `watch` – Wear-OS-App (Kotlin, Compose).
 - [`docs/protocol.md`](docs/protocol.md) – das Protokoll zwischen Uhr und PC,

@@ -2,11 +2,14 @@
   import { onMount } from "svelte";
   import { app, init } from "./lib/state.svelte";
   import { language, t } from "./lib/i18n";
+  import { applyTheme } from "./lib/theme";
   import Nav from "./components/Nav.svelte";
   import Overview from "./pages/Overview.svelte";
   import Chatbox from "./pages/Chatbox.svelte";
   import Pulse from "./pages/Pulse.svelte";
   import Settings from "./pages/Settings.svelte";
+  import Scanner from "./pages/Scanner.svelte";
+  import Avatar from "./pages/Avatar.svelte";
 
   onMount(() => {
     init();
@@ -14,6 +17,10 @@
 
   $effect(() => {
     document.documentElement.lang = language();
+  });
+
+  $effect(() => {
+    applyTheme(app.config?.theme ?? "night", app.config?.accent ?? "");
   });
 </script>
 
@@ -30,6 +37,10 @@
         <Chatbox />
       {:else if app.page === "pulse"}
         <Pulse />
+      {:else if app.page === "scanner"}
+        <Scanner />
+      {:else if app.page === "avatar"}
+        <Avatar />
       {:else}
         <Settings />
       {/if}

@@ -1,7 +1,7 @@
 //! End to end: a fake watch connects over WebSocket, a fake VRChat listens on
 //! UDP, and the engine in between has to produce the right OSC messages.
 
-use futures_util::SinkExt;
+use futures_util::{SinkExt, StreamExt};
 use osctool_core::{Config, Engine};
 use rosc::{OscPacket, OscType};
 use std::time::Duration;
@@ -95,7 +95,10 @@ async fn heart_rate_reaches_chatbox_and_avatar() {
 
     let snapshot = engine.snapshot();
     assert_eq!(snapshot.hr.bpm, Some(87));
-    assert_eq!(snapshot.hr.device.as_deref(), Some("Test Watch"));
+    assert_eq!(
+        snapshot.hr.device.and_then(|d| d.name).as_deref(),
+        Some("Test Watch")
+    );
     assert!(snapshot.network.hr_listening);
 
     // A typed message replaces the template ...
@@ -182,4 +185,125 @@ async fn chatbox_respects_the_rate_limit() {
     for pair in stamps.windows(2) {
         assert!(pair[1] - pair[0] >= Duration::from_millis(1450));
     }
+}
+
+fn free_udp_port() -> u16 {
+    std::net::UdpSocket::bind("127.0.0.1:0")
+        .unwrap()
+        .local_addr()
+        .unwrap()
+        .port()
+}
+
+/// VRChat sends a parameter back: the monitor shows it, and the configured
+/// trigger starts the furry scanner, whose result lands in the chatbox.
+#[tokio::test(flavor = "multi_thread")]
+async fn avatar_parameter_starts_furry_scan() {
+    let vrchat = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+    let receive_port = free_udp_port();
+    let config = Config {
+        osc_port: vrchat.local_addr().unwrap().port(),
+        hr_port: free_tcp_port(),
+        hr_avatar_params: false,
+        chatbox_enabled: false,
+        osc_receive: true,
+        osc_receive_port: receive_port,
+        scan_param_enabled: true,
+        scan_name: "Fox".into(),
+        language: "en".into(),
+        ..Config::default()
+    };
+    let engine = Engine::start(config).await.unwrap();
+
+    let game = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+    let send = |name: &str, on: bool| {
+        osctool_core::osc::avatar_param(name, OscType::Bool(on))
+    };
+    // Wait until the receiver is up, then flip the trigger.
+    for _ in 0..50 {
+        if engine.snapshot().receiver.listening {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(50)).await;
+    }
+    game.send_to(&send("Ears", true), ("127.0.0.1", receive_port)).await.unwrap();
+    game.send_to(&send("FurryScan", true), ("127.0.0.1", receive_port)).await.unwrap();
+
+    let seen = collect(&vrchat, |seen| {
+        chatbox_texts(seen).iter().any(|t| t.starts_with("🐾 Fox: "))
+    })
+    .await;
+    assert!(chatbox_texts(&seen).iter().any(|t| t.starts_with("🔍 Scanning Fox")));
+
+    let rows = engine.monitor();
+    assert!(rows
+        .iter()
+        .any(|r| r.address == "/avatar/parameters/Ears" && r.value == "true"));
+    let snapshot = engine.snapshot();
+    assert_eq!(snapshot.scanner.results.len(), 1);
+    assert_eq!(snapshot.scanner.results[0].name, "Fox");
+    assert!(snapshot.receiver.total >= 2);
+
+    // Holding the trigger does not scan again; only off -> on does.
+    game.send_to(&send("FurryScan", true), ("127.0.0.1", receive_port)).await.unwrap();
+    tokio::time::sleep(Duration::from_millis(300)).await;
+    assert!(!engine.snapshot().scanner.scanning);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn sends_avatar_parameters_on_request() {
+    use osctool_core::config::ParamKind;
+
+    let vrchat = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+    let config = Config {
+        osc_port: vrchat.local_addr().unwrap().port(),
+        hr_port: free_tcp_port(),
+        hr_avatar_params: false,
+        chatbox_enabled: false,
+        ..Config::default()
+    };
+    let engine = Engine::start(config).await.unwrap();
+    engine.send_param("Hat", ParamKind::Bool, 1.0).unwrap();
+    engine.send_param("/avatar/parameters/Outfit", ParamKind::Int, 3.0).unwrap();
+    engine.send_param("Blush", ParamKind::Float, 2.0).unwrap();
+    assert!(engine.send_param("bad name", ParamKind::Bool, 1.0).is_err());
+
+    collect(&vrchat, |seen| {
+        has(seen, "/avatar/parameters/Hat", &OscType::Bool(true))
+            && has(seen, "/avatar/parameters/Outfit", &OscType::Int(3))
+            && has(seen, "/avatar/parameters/Blush", &OscType::Float(1.0))
+    })
+    .await;
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn shutdown_tells_the_watch_to_stop() {
+    let hr_port = free_tcp_port();
+    let config = Config { osc_port: free_tcp_port(), hr_port, ..Config::default() };
+    let engine = Engine::start(config).await.unwrap();
+
+    let url = format!("ws://127.0.0.1:{hr_port}/");
+    let mut watch = None;
+    for _ in 0..50 {
+        if let Ok((ws, _)) = tokio_tungstenite::connect_async(&url).await {
+            watch = Some(ws);
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(100)).await;
+    }
+    let mut watch = watch.expect("receiver did not come up");
+
+    engine.shutdown().await;
+
+    let code = tokio::time::timeout(Duration::from_secs(3), async {
+        while let Some(Ok(msg)) = watch.next().await {
+            if let Message::Close(frame) = msg {
+                return frame.map(|f| u16::from(f.code));
+            }
+        }
+        None
+    })
+    .await
+    .expect("no close frame");
+    assert_eq!(code, Some(osctool_core::hr::CLOSE_APP_QUIT));
 }

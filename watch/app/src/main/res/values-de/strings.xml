@@ -9,6 +9,8 @@
     <string name="status_searching">Sucht den PC …</string>
     <string name="status_connecting">Verbindet mit %1$s …</string>
     <string name="status_connected">Live auf %1$s</string>
+    <string name="status_ended_pc_closed">Die PC-App wurde beendet. Übertragung gestoppt, um Akku zu sparen.</string>
+    <string name="status_ended_unreachable">PC 3 Minuten nicht erreichbar. Übertragung gestoppt, um Akku zu sparen.</string>
     <string name="status_no_contact">Kein Messwert. Trage die Uhr eng am Handgelenk.</string>
     <string name="permission_needed">Ohne die Sensor-Berechtigung gibt es keinen Puls zu senden. Erlaube sie in den Einstellungen der Uhr.</string>
     <string name="no_sensor">Diese Uhr hat keinen Pulssensor.</string>

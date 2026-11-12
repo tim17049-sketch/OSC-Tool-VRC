@@ -15,7 +15,8 @@
 
   const groups: { label: Key; names: string[] }[] = [
     { label: "tpl.group.pulse", names: ["hr", "hr_trend", "heart", "hr_min", "hr_max", "hr_avg"] },
-    { label: "tpl.group.music", names: ["song", "title", "artist"] },
+    { label: "tpl.group.watch", names: ["watch", "watch_battery"] },
+    { label: "tpl.group.music", names: ["song", "title", "artist", "album", "play", "bar", "pos", "dur", "lyric"] },
     { label: "tpl.group.time", names: ["time", "date"] },
     { label: "tpl.group.system", names: ["cpu", "cpu_temp", "ram", "gpu", "gpu_temp"] },
     { label: "tpl.group.vr", names: ["hmd_bat", "left_bat", "right_bat"] },
@@ -29,6 +30,7 @@
   const lines = $derived(preview ? preview.split("\n").length : 0);
   const clipped = $derived(preview.endsWith("…") && chars >= CHATBOX_MAX_CHARS);
   const tooManyLines = $derived(config.template.split("\n").length > CHATBOX_MAX_LINES);
+  const usesLyrics = $derived(config.template.includes("{lyric}"));
 
   function insert(name: string) {
     const token = `{${name}}`;
@@ -71,6 +73,14 @@
         ></textarea>
       </label>
       <p class="small muted">{t("tpl.help")}</p>
+      {#if usesLyrics}
+        <p class="small lyrics">
+          <span class="muted">{t("tpl.lyrics")}</span>
+          {#if snap.lyrics}
+            <span class:over={snap.lyrics === "error"}>{t(`tpl.lyrics.${snap.lyrics}`)}</span>
+          {/if}
+        </p>
+      {/if}
 
       <div class="chips" role="group" aria-label={t("tpl.insert")}>
         <p class="small muted">{t("tpl.insert")}</p>
@@ -130,7 +140,15 @@
         </label>
         <p class="small muted">{t("tpl.intervalHelp")}</p>
 
-        <label class="field">
+        <Switch
+          checked={config.messageKeep}
+          label={t("tpl.keep")}
+          onchange={(messageKeep) => updateConfig({ messageKeep })}
+        />
+        {#if config.messageKeep}
+          <p class="small muted">{t("tpl.keepHelp")}</p>
+        {/if}
+        <label class="field" class:off={config.messageKeep}>
           <span class="row">
             {t("tpl.messageSeconds")}
             <b class="num">{t("tpl.seconds", { s: config.messageSeconds })}</b>
@@ -141,6 +159,7 @@
             max="60"
             step="2"
             value={config.messageSeconds}
+            disabled={config.messageKeep}
             oninput={(e) => updateConfig({ messageSeconds: e.currentTarget.valueAsNumber })}
           />
         </label>
@@ -149,6 +168,11 @@
           checked={config.time24h}
           label={t("tpl.time24")}
           onchange={(time24h) => updateConfig({ time24h })}
+        />
+        <Switch
+          checked={config.showPaused}
+          label={t("tpl.paused")}
+          onchange={(showPaused) => updateConfig({ showPaused })}
         />
         <Switch
           checked={config.notifySound}
@@ -251,7 +275,7 @@
     margin: 14px 0 12px;
     padding: 20px 12px;
     border-radius: 12px;
-    background: linear-gradient(180deg, #100e22 0%, #1a1636 100%);
+    background: linear-gradient(180deg, var(--scene-top) 0%, var(--scene-bottom) 100%);
   }
 
   .counts {
@@ -262,6 +286,15 @@
 
   .over {
     color: var(--warn);
+  }
+
+  .lyrics {
+    display: grid;
+    gap: 2px;
+  }
+
+  .off {
+    opacity: 0.45;
   }
 
   .row {

@@ -35,7 +35,7 @@ pub use imp::SteamVr;
 
 #[cfg(not(all(windows, target_pointer_width = "64")))]
 #[derive(Default)]
-pub struct SteamVr;
+pub struct SteamVr(());
 
 #[cfg(not(all(windows, target_pointer_width = "64")))]
 impl SteamVr {

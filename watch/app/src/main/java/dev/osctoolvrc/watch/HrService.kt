@@ -46,6 +46,10 @@ import kotlin.math.roundToInt
  * no phone and no cloud in between, which keeps the delay to the sensor's own
  * update rate (about one value per second).
  *
+ * To save battery the sensor only runs while the PC is connected, and the
+ * service ends itself when the desktop app closes or the PC has been out of
+ * reach for a few minutes.
+ *
  * All state is touched on the main thread only.
  */
 class HrService : Service(), SensorEventListener {
@@ -57,6 +61,7 @@ class HrService : Service(), SensorEventListener {
     private var wakeLock: PowerManager.WakeLock? = null
 
     private var running = false
+    private var sensorOn = false
     private var wifi: Network? = null
 
     private var client: OkHttpClient? = null
@@ -72,6 +77,8 @@ class HrService : Service(), SensorEventListener {
     private var noContact = false
     private var lastEventAt = 0L
     private var lastSentAt = 0L
+    private var lastStatusAt = 0L
+    private var sensorName: String? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -88,7 +95,8 @@ class HrService : Service(), SensorEventListener {
     }
 
     override fun onDestroy() {
-        stop()
+        // stop() already ran if we ended ourselves; keep its reason on screen.
+        if (running) stop()
         super.onDestroy()
     }
 
@@ -105,10 +113,10 @@ class HrService : Service(), SensorEventListener {
             return
         }
         running = true
+        sensorName = sensor.name?.takeIf { it.isNotBlank() }
         wakeLock = getSystemService(PowerManager::class.java)
             .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "osctool:hr")
             .apply { acquire() }
-        sensors.registerListener(this, sensor, SensorManager.SENSOR_DELAY_FASTEST)
 
         // Ask for Wi-Fi explicitly: by default a watch routes traffic through
         // the phone via Bluetooth, which is slow and cannot reach the PC.
@@ -119,12 +127,13 @@ class HrService : Service(), SensorEventListener {
 
         Repo.state.value = UiState(running = true, link = Link.NoWifi)
         main.postDelayed(ticker, 1000)
+        main.postDelayed(giveUp, AUTO_STOP_MS)
     }
 
-    private fun stop() {
+    private fun stop(ended: Ended? = null) {
         if (running) {
             running = false
-            sensors.unregisterListener(this)
+            sensorOff()
             runCatching { connectivity.unregisterNetworkCallback(networkCallback) }
             wakeLock?.let { if (it.isHeld) it.release() }
             wakeLock = null
@@ -136,12 +145,30 @@ class HrService : Service(), SensorEventListener {
         found = null
         bpm = null
         noContact = false
-        Repo.state.value = UiState()
+        Repo.state.value = UiState(ended = ended)
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
 
+    /** Nobody to send to for too long: end instead of draining the battery. */
+    private val giveUp = Runnable { if (running) stop(Ended.Unreachable) }
+
     // ---- sensor ------------------------------------------------------------
+
+    private fun sensorOn() {
+        if (sensorOn) return
+        val sensor = sensors.getDefaultSensor(Sensor.TYPE_HEART_RATE) ?: return
+        sensorOn = sensors.registerListener(this, sensor, SensorManager.SENSOR_DELAY_FASTEST)
+    }
+
+    private fun sensorOff() {
+        if (!sensorOn) return
+        sensors.unregisterListener(this)
+        sensorOn = false
+        bpm = null
+        noContact = false
+        Repo.state.update { it.copy(bpm = null, noContact = false) }
+    }
 
     override fun onSensorChanged(event: SensorEvent) {
         val value = event.values.firstOrNull()?.roundToInt() ?: 0
@@ -161,12 +188,16 @@ class HrService : Service(), SensorEventListener {
         override fun run() {
             if (!running) return
             val now = SystemClock.elapsedRealtime()
-            if (bpm != null && now - lastEventAt > SENSOR_SILENCE_MS) {
+            if (sensorOn && bpm != null && now - lastEventAt > SENSOR_SILENCE_MS) {
                 bpm = null
                 noContact = true
                 Repo.state.update { it.copy(bpm = null, noContact = true) }
             }
             if (now - lastSentAt >= 950 && (bpm != null || noContact)) send()
+            if (socketOpen && now - lastStatusAt >= STATUS_MS) {
+                socket?.send(DeviceInfo.status(this@HrService).toString())
+                lastStatusAt = now
+            }
             main.postDelayed(this, 1000)
         }
     }
@@ -193,6 +224,7 @@ class HrService : Service(), SensorEventListener {
                 if (!running || wifi != network) return@post
                 wifi = null
                 stopDiscovery()
+                if (socketOpen) linkDown()
                 closeSocket()
                 found = null
                 Repo.state.update { it.copy(link = Link.NoWifi, peer = null) }
@@ -299,11 +331,11 @@ class HrService : Service(), SensorEventListener {
                 main.post {
                     if (mine != generation) return@post
                     socketOpen = true
-                    val hello = JSONObject()
-                        .put("type", "hello")
-                        .put("device", Build.MODEL)
-                        .put("app", BuildConfig.VERSION_NAME)
-                    webSocket.send(hello.toString())
+                    main.removeCallbacks(giveUp)
+                    lastEventAt = SystemClock.elapsedRealtime()
+                    sensorOn()
+                    webSocket.send(DeviceInfo.hello(this@HrService, sensorName).toString())
+                    lastStatusAt = SystemClock.elapsedRealtime()
                     Repo.state.update { it.copy(link = Link.Connected) }
                     if (bpm != null || noContact) send()
                 }
@@ -319,6 +351,12 @@ class HrService : Service(), SensorEventListener {
                 }
             }
 
+            override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
+                // The desktop app says goodbye when it quits: no point waiting.
+                if (code != CLOSE_APP_QUIT) return
+                main.post { if (mine == generation && running) stop(Ended.PcClosed) }
+            }
+
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
                 main.post { if (mine == generation) linkLost() }
             }
@@ -330,14 +368,23 @@ class HrService : Service(), SensorEventListener {
     }
 
     private fun linkLost() {
+        val wasOpen = socketOpen
         closeSocket()
         // The PC may have a new address by now; look it up again.
         found = null
         if (!running) return
+        if (wasOpen) linkDown()
         Repo.state.update {
             it.copy(link = if (wifi == null) Link.NoWifi else Link.Searching, peer = null)
         }
         retryLater()
+    }
+
+    /** Connection gone: pause the sensor and start the countdown to giving up. */
+    private fun linkDown() {
+        sensorOff()
+        main.removeCallbacks(giveUp)
+        main.postDelayed(giveUp, AUTO_STOP_MS)
     }
 
     private fun closeSocket() {
@@ -385,6 +432,12 @@ class HrService : Service(), SensorEventListener {
         private const val NOTIFICATION_ID = 1
         private const val RETRY_MS = 3000L
         private const val SENSOR_SILENCE_MS = 30_000L
+        /** How often the battery level goes to the PC. */
+        private const val STATUS_MS = 60_000L
+        /** How long to keep looking for the PC before the service ends. */
+        private const val AUTO_STOP_MS = 3 * 60_000L
+        /** Close code the desktop app sends when it quits (core/src/hr.rs). */
+        private const val CLOSE_APP_QUIT = 4000
 
         fun start(context: Context) {
             ContextCompat.startForegroundService(context, Intent(context, HrService::class.java))
